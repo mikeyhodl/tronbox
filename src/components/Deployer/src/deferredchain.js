@@ -21,6 +21,7 @@ DeferredChain.prototype.then = function (fn) {
   });
   this.chain = this.chain.catch(function (e) {
     self._error(e);
+    throw e;
   });
 
   return this;
