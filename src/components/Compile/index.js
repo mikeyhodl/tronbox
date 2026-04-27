@@ -237,7 +237,7 @@ function replaceLinkReferences(bytecode, linkReferences, libraryName) {
 }
 
 function orderABI(contract) {
-  const { abi, contractName, ast } = contract;
+  const { abi, contract_name, ast } = contract;
 
   if (!abi) {
     return []; //Yul doesn't return ABIs, but we require something
@@ -250,7 +250,7 @@ function orderABI(contract) {
   // AST can have multiple contract definitions, make sure we have the
   // one that matches our contract
   const contractDefinition = ast.nodes.find(
-    ({ nodeType, name }) => nodeType === 'ContractDefinition' && name === contractName
+    ({ nodeType, name }) => nodeType === 'ContractDefinition' && name === contract_name
   );
 
   if (!contractDefinition || !contractDefinition.nodes) {
