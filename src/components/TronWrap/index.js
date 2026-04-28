@@ -183,19 +183,6 @@ function init(options, extraOptions = {}) {
     };
   }
 
-  tronWrap._getNetworkInfo = async function () {
-    const info = {
-      parameters: {},
-      nodeinfo: {}
-    };
-    try {
-      const res = await Promise.all([tronWrap.trx.getChainParameters(), tronWrap.trx.getNodeInfo()]);
-      info.parameters = res[0] || {};
-      info.nodeinfo = res[1] || {};
-    } catch (err) {}
-    return Promise.resolve(info);
-  };
-
   tronWrap._getNetwork = function (callback) {
     callback && callback(null, options.network_id);
   };
@@ -417,106 +404,75 @@ function init(options, extraOptions = {}) {
     }
   };
 
-  tronWrap._triggerContract = function (option, callback) {
+  tronWrap._triggerContract = async function (option, callback) {
     if (extraOptions.evm) return tronWrap._evmTriggerContract(option, callback);
 
-    const myContract = this.contract(option.abi, option.address);
-    let callSend = 'send'; // constructor and fallback
-    const funAbi = tronWrap._findMethodAbi(option.methodName, option.abi);
-    callSend = /payable/.test(funAbi.stateMutability) ? 'send' : 'call';
-    option.methodArgs || (option.methodArgs = {});
-    option.methodArgs.from || (option.methodArgs.from = this._accounts[0]);
+    try {
+      const myContract = this.contract(option.abi, option.address);
+      const funAbi = tronWrap._findMethodAbi(option.methodName, option.abi);
+      const callSend = /payable/.test(funAbi.stateMutability) ? 'send' : 'call';
+      option.methodArgs || (option.methodArgs = {});
+      option.methodArgs.from || (option.methodArgs.from = this._accounts[0]);
 
-    dlog(option.methodName, option.args, option.methodArgs);
+      dlog(option.methodName, option.args, option.methodArgs);
 
-    let privateKey;
-    if (callSend === 'send' && option.methodArgs.from) {
-      privateKey = privateKeyByAccount[option.methodArgs.from];
-    }
+      const address = option.methodArgs.from;
+      const privateKey = callSend === 'send' && address ? privateKeyByAccount[address] : undefined;
 
-    if (!option.methodArgs.feeLimit) {
-      option.methodArgs.feeLimit = this.networkConfig.feeLimit;
-    }
+      if (!option.methodArgs.feeLimit) {
+        option.methodArgs.feeLimit = this.networkConfig.feeLimit;
+      }
 
-    this._getNetworkInfo()
-      .then(info => {
-        if (info.compilerVersion === '1') {
-          delete option.methodArgs.tokenValue;
+      if (callSend === 'send' && tronWrap._treUnlockedAccounts[address]) {
+        dlog('Unlocked account', { address });
+
+        const { abi, functionSelector, defaultOptions } = myContract.methodInstances[option.methodName];
+        const rawParameter = this.utils.abi.encodeParamsV2ByABI(abi, option.args);
+        const { stateMutability } = abi;
+
+        if (!['payable'].includes(stateMutability.toLowerCase())) {
+          delete option.methodArgs.callValue;
           delete option.methodArgs.tokenId;
+          delete option.methodArgs.tokenValue;
         }
-        const address = option.methodArgs.from;
-        if (callSend === 'send' && tronWrap._treUnlockedAccounts[address]) {
-          dlog('Unlocked account', { address });
 
-          const { abi, functionSelector, defaultOptions } = myContract.methodInstances[option.methodName];
-          const rawParameter = this.utils.abi.encodeParamsV2ByABI(abi, option.args);
-          const { stateMutability } = abi;
+        const triggerOptions = { ...defaultOptions, ...option.methodArgs, rawParameter };
 
-          if (!['payable'].includes(stateMutability.toLowerCase())) {
-            delete option.methodArgs.callValue;
-            delete option.methodArgs.tokenId;
-            delete option.methodArgs.tokenValue;
+        const transaction = await tronWrap.transactionBuilder.triggerSmartContract(
+          option.address,
+          functionSelector,
+          triggerOptions,
+          [],
+          address
+        );
+        if (!transaction.result || !transaction.result.result) {
+          throw 'Unknown error: ' + JSON.stringify(transaction, null, 2);
+        }
+        transaction.transaction.signature = [];
+        const broadcast = await tronWrap.trx.sendRawTransaction(transaction.transaction);
+        if (broadcast.code) {
+          const err = { error: broadcast.code, message: broadcast.code };
+          if (broadcast.message) {
+            err.message = tronWrap.toUtf8(broadcast.message);
+            err.error = tronWrap.toUtf8(broadcast.message);
           }
-          const options = {};
-          Object.keys(defaultOptions).forEach(_ => {
-            options[_] = defaultOptions[_];
-          });
-          Object.keys(option.methodArgs).forEach(_ => {
-            options[_] = option.methodArgs[_];
-          });
-          options.rawParameter = rawParameter;
-
-          return new Promise((resolve, reject) => {
-            tronWrap.transactionBuilder
-              .triggerSmartContract(option.address, functionSelector, options, [], address)
-              .then(transaction => {
-                if (!transaction.result || !transaction.result.result) {
-                  return reject('Unknown error: ' + JSON.stringify(transaction, null, 2));
-                }
-
-                transaction.transaction.signature = [];
-                tronWrap.trx
-                  .sendRawTransaction(transaction.transaction)
-                  .then(broadcast => {
-                    if (broadcast.code) {
-                      const err = {
-                        error: broadcast.code,
-                        message: broadcast.code
-                      };
-                      if (broadcast.message) {
-                        err.message = tronWrap.toUtf8(broadcast.message);
-                        err.error = tronWrap.toUtf8(broadcast.message);
-                      }
-                      return reject(err);
-                    }
-
-                    return resolve(transaction.transaction.txID);
-                  })
-                  .catch(err => {
-                    return reject(err);
-                  });
-              })
-              .catch(err => {
-                return reject(err);
-              });
-          });
+          throw err;
         }
+        return callback(null, transaction.transaction.txID);
+      }
 
-        if (callSend === 'send' && !tronWrap._treUnlockedAccounts[address] && !privateKey) {
-          return callback(`No private key available for from address ${address}. `);
-        }
+      if (callSend === 'send' && !privateKey) {
+        return callback(`No private key available for from address ${address}. `);
+      }
 
-        return myContract[option.methodName](...option.args)[callSend](option.methodArgs || {}, privateKey);
-      })
-      .then(function (res) {
-        callback(null, res);
-      })
-      .catch(function (reason) {
-        if (reason && typeof reason.message === 'string') {
-          reason.message = reason.message.replace(/^error:\s*/i, '');
-        }
-        callback(reason);
-      });
+      const res = await myContract[option.methodName](...option.args)[callSend](option.methodArgs || {}, privateKey);
+      callback(null, res);
+    } catch (reason) {
+      if (reason && typeof reason.message === 'string') {
+        reason.message = reason.message.replace(/^error:\s*/i, '');
+      }
+      callback(reason);
+    }
   };
 
   tronWrap.request = async function (request = {}) {
