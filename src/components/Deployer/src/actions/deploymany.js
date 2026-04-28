@@ -2,16 +2,8 @@ const deploy = require('./deploy');
 
 module.exports = function (arr, deployer) {
   return function () {
-    const deployments = arr.map(function (args) {
-      let contract;
-
-      if (Array.isArray(args)) {
-        contract = args.shift();
-      } else {
-        contract = args;
-        args = [];
-      }
-
+    const deployments = arr.map(function (entry) {
+      const [contract, ...args] = Array.isArray(entry) ? entry : [entry];
       return deploy(contract, args, deployer)();
     });
 
