@@ -162,12 +162,7 @@ Console.prototype.interpret = function (cmd, context, filename, callback) {
   const cmdRes = this.command.getCommand(cmd, this.options.noAliases);
   if (cmdRes != null) {
     if (cmdRes.name === 'help') {
-      return self.command.run(cmd, this.options, function (err) {
-        if (err) {
-          console.error(err.message ? err.message : err);
-        }
-        callback();
-      });
+      return self.command.run(cmd, this.options, callback);
     }
     if (cmdRes.argv.help) {
       this.command.args.parse(cmd);
@@ -257,7 +252,12 @@ Console.prototype.interpret = function (cmd, context, filename, callback) {
     .then(function (res) {
       callback(null, res);
     })
-    .catch(callback);
+    .catch(function (err) {
+      let msg = typeof err === 'string' ? err : err && err.message ? err.message : String(err);
+      msg = msg.replace(/^error(:|) /i, '');
+      console.error(chalk.red(chalk.bold('ERROR:'), msg));
+      callback();
+    });
 };
 
 module.exports = Console;

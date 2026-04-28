@@ -518,14 +518,10 @@ function init(options, extraOptions = {}) {
         callback(null, res);
       })
       .catch(function (reason) {
-        if (typeof reason === 'object' && reason.error) {
-          reason = reason.error;
+        if (reason && typeof reason.message === 'string') {
+          reason.message = reason.message.replace(/^error:\s*/i, '');
         }
-        if (process.env.CURRENT === 'test') {
-          callback(reason);
-        } else {
-          logErrorAndExit(console, reason);
-        }
+        callback(reason);
       });
   };
 
