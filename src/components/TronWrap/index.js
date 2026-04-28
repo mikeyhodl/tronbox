@@ -11,14 +11,6 @@ let instance;
 let privateKeyByAccount = {};
 let ethersWallets = {};
 
-function TronWrap() {
-  this._toNumber = toNumber;
-  this.EventList = [];
-  this.filterMatchFunction = filterMatchFunction;
-  instance = this;
-  return instance;
-}
-
 function toNumber(value) {
   if (!value) return null;
   if (typeof value === 'string') {
@@ -159,14 +151,16 @@ function init(options, extraOptions = {}) {
     return privateKey.replace(/^0x/, '');
   };
 
-  TronWrap.prototype = new TronWebProxy(
+  const tronWrap = new TronWebProxy(
     options.fullNode || options.fullHost,
     options.solidityNode || options.fullHost,
     options.eventServer || options.fullHost,
     getPrivateKey()
   );
 
-  const tronWrap = TronWrap.prototype;
+  tronWrap._toNumber = toNumber;
+  tronWrap.EventList = [];
+  tronWrap.filterMatchFunction = filterMatchFunction;
 
   tronWrap._tre = extraOptions.tre;
   tronWrap._treUnlockedAccounts = {};
@@ -740,7 +734,8 @@ function init(options, extraOptions = {}) {
     }
   };
 
-  return new TronWrap();
+  instance = tronWrap;
+  return instance;
 }
 
 const logErrorAndExit = (logger, err) => {
