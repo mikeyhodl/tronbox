@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const { isValidNpmImportPath, INVALID_IMPORT_MESSAGE } = require('./validate');
 
 // Extract npm package name from an import path.
 // Scoped:   "@openzeppelin/contracts/token/ERC20.sol" → "@openzeppelin/contracts"
@@ -41,11 +42,15 @@ NPM.prototype.require = function (import_path, search_path) {
 };
 
 NPM.prototype.resolve = function (import_path, imported_from, callback) {
-  // If nothing's found, body returns `undefined`
-  let body;
+  if (!isValidNpmImportPath(import_path)) {
+    return callback(new Error(INVALID_IMPORT_MESSAGE(import_path)));
+  }
+
   let packageInfo = {};
+
   if (import_path === 'tronbox/console.sol') {
     const consolePath = path.resolve(__dirname, '../../../console.sol');
+    let body;
     try {
       body = fs.readFileSync(consolePath, { encoding: 'utf8' });
     } catch (e) {}
@@ -53,21 +58,26 @@ NPM.prototype.resolve = function (import_path, imported_from, callback) {
   }
 
   const nodeModulesDir = path.join(this.working_directory, 'node_modules');
-  const expectedPath = path.join(nodeModulesDir, import_path);
-  const relative = path.relative(this.working_directory, expectedPath);
-  if (relative.startsWith('..') || path.isAbsolute(relative)) {
-    return callback(new Error(`${import_path} is outside the project directory.`));
+  const packageName = getPackageName(import_path);
+  const packageDir = path.join(nodeModulesDir, packageName);
+
+  if (!fs.existsSync(packageDir)) {
+    return callback(new Error(`Package "${packageName}" is not installed.`));
   }
 
+  const expectedPath = path.join(nodeModulesDir, import_path);
+  let body;
   try {
     body = fs.readFileSync(expectedPath, { encoding: 'utf8' });
+  } catch (e) {
+    const subpath = import_path.substring(packageName.length + 1);
+    return callback(new Error(`File "${subpath}" does not exist within package "${packageName}".`));
+  }
 
-    const packageName = getPackageName(import_path);
-    const pkgJsonPath = path.join(nodeModulesDir, packageName, 'package.json');
-    try {
-      const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, { encoding: 'utf8' }));
-      packageInfo = { name: pkg.name, version: pkg.version };
-    } catch (e) {}
+  const pkgJsonPath = path.join(packageDir, 'package.json');
+  try {
+    const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, { encoding: 'utf8' }));
+    packageInfo = { name: pkg.name, version: pkg.version };
   } catch (e) {}
 
   return callback(null, body, import_path, packageInfo);

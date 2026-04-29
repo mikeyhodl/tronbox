@@ -40,21 +40,32 @@ const compile = function (sources, options, callback) {
 
   // Compile sources keyed by paths relative to contracts_directory, with
   // backslashes normalized to forward slashes so solc sees OS-independent keys.
+  // Sources outside contracts_directory aren't supported — they'd produce keys
+  // with leading '..' segments that solc normalizes away during import lookup,
+  // breaking the source-key match. Reject them with a clear error instead.
   const operatingSystemIndependentSources = {};
   const originalPathMappings = {};
 
-  Object.keys(sources).forEach(function (source) {
+  for (const source of Object.keys(sources)) {
     let key = source;
 
     if (path.isAbsolute(key)) {
       key = path.relative(options.contracts_directory, key);
+      if (key.startsWith('..')) {
+        return callback(
+          new Error(
+            `Source "${source}" is outside the contracts directory. ` +
+              `Move it inside the contracts directory or publish it as an npm package.`
+          )
+        );
+      }
     }
 
     key = key.replace(/\\/g, '/');
 
     operatingSystemIndependentSources[key] = sources[source];
     originalPathMappings[key] = source;
-  });
+  }
 
   const settings = Object.keys(options.solc).length ? options.solc : options.compilers?.solc?.settings || {};
 

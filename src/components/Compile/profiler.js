@@ -8,6 +8,7 @@ const Graph = require('graphlib').Graph;
 const Parser = require('./parser');
 const { expect, findContracts } = require('../../lib/utils');
 const CompileError = require('./compileerror');
+const { INVALID_IMPORT_MESSAGE } = require('../Resolver/validate');
 
 module.exports = {
   updated: function (options, callback) {
@@ -286,6 +287,14 @@ module.exports = {
           dependsGraph.setNode(resolved_path, resolved_body);
 
           let imports = Parser.parseImports(resolved_body, resolver.options);
+
+          // Reject user-written absolute imports before any path normalization
+          // turns explicitly-relative imports into absolute paths internally.
+          for (const dependency_path of imports) {
+            if (path.isAbsolute(dependency_path)) {
+              return finished(new Error(INVALID_IMPORT_MESSAGE(dependency_path)));
+            }
+          }
 
           // Convert explicitly relative dependencies of modules
           // back into module paths. We also use this loop to update

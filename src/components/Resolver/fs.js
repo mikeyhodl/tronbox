@@ -1,6 +1,5 @@
 const path = require('path');
 const fs = require('fs');
-const eachSeries = require('async/eachSeries');
 
 function FS(working_directory, contracts_build_directory) {
   this.working_directory = working_directory;
@@ -72,47 +71,20 @@ FS.prototype.getContractName = function (sourcePath, searchPath) {
 };
 
 FS.prototype.resolve = function (import_path, imported_from, callback) {
-  imported_from = imported_from || '';
-
-  const possible_paths = path.isAbsolute(import_path)
-    ? [import_path]
-    : [import_path, path.join(path.dirname(imported_from), import_path)];
+  // Resolver dispatches absolute paths here; profiler pre-resolves './' / '../'
+  // imports to absolute paths via resolve_dependency_path before they re-enter.
+  if (!path.isAbsolute(import_path)) {
+    throw new Error(`FS resolver received non-absolute path: ${import_path}`);
+  }
   const workingDirectoryPath = path.resolve(this.working_directory);
+  const relative = path.relative(workingDirectoryPath, import_path);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    return callback(new Error(`${import_path} is outside the project directory.`));
+  }
 
-  let resolved_body = null;
-  let resolved_path = null;
-
-  eachSeries(
-    possible_paths,
-    function (possible_path, finished) {
-      if (resolved_body != null) {
-        return finished();
-      }
-
-      const resolvedPath = path.resolve(workingDirectoryPath, possible_path);
-      const relative = path.relative(workingDirectoryPath, resolvedPath);
-      if (relative.startsWith('..') || path.isAbsolute(relative)) {
-        return finished(new Error(`${import_path} is outside the project directory.`));
-      }
-
-      // Check the expected path.
-      fs.readFile(resolvedPath, { encoding: 'utf8' }, function (err, body) {
-        // If there's an error, that means we can't read the source even if
-        // it exists. Treat it as if it doesn't by ignoring any errors.
-        // body will be undefined if error.
-        if (body) {
-          resolved_body = body;
-          resolved_path = resolvedPath;
-        }
-
-        return finished();
-      });
-    },
-    function (err) {
-      if (err) return callback(err);
-      callback(null, resolved_body, resolved_path);
-    }
-  );
+  fs.readFile(import_path, { encoding: 'utf8' }, function (err, body) {
+    callback(null, err ? undefined : body, import_path);
+  });
 };
 
 // Here we're resolving from local files to local files, all absolute.
