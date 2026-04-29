@@ -55,18 +55,17 @@ FS.prototype.require = function (import_path, search_path) {
 FS.prototype.getContractName = function (sourcePath, searchPath) {
   searchPath = searchPath || this.contracts_build_directory;
 
-  const filenames = fs.readdirSync(searchPath);
-  for (let i = 0; i < filenames.length; i++) {
-    const filename = filenames[i];
-
-    const artifact = JSON.parse(fs.readFileSync(path.resolve(searchPath, filename)));
-
-    if (artifact.sourcePath === sourcePath) {
-      return artifact.contractName;
+  for (const filename of fs.readdirSync(searchPath)) {
+    try {
+      const artifact = JSON.parse(fs.readFileSync(path.resolve(searchPath, filename)));
+      if (artifact.sourcePath === sourcePath) {
+        return artifact.contractName;
+      }
+    } catch (e) {
+      // skip unreadable / non-JSON entries
     }
   }
 
-  // fallback
   return path.basename(sourcePath, '.sol');
 };
 
