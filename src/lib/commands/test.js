@@ -57,19 +57,6 @@ Usage: $0 test [<files...>] [--file <file>]
 
     const config = Config.detect(options);
 
-    // if "development" exists, default to using that for testing
-    if (!config.network) {
-      if (config.networks.development) config.network = 'development';
-      else if (config.networks.test) config.network = 'test';
-    }
-
-    if (!config.network) {
-      console.error(
-        '\nERROR: Neither development nor test network has been set. Please configure a network in your project configuration.\n'
-      );
-      return;
-    }
-
     try {
       TronWrap(config.networks[config.network], {
         evm: options.evm,

@@ -17,13 +17,6 @@ const Environment = {
       config.artifactor = new Artifactor(config.contracts_build_directory);
     }
 
-    if (!config.network && config.networks['development']) {
-      config.network = 'development';
-    }
-
-    if (!config.network) {
-      return callback(new Error('No network specified. Cannot determine current network.'));
-    }
     const network_config = config.networks[config.network];
 
     if (!network_config) {
