@@ -92,11 +92,6 @@ const Test = {
         return self.setJSTestGlobals(accounts, config.resolver);
       })
       .then(function () {
-        // Finally, run mocha.
-        process.on('unhandledRejection', function (reason) {
-          throw reason;
-        });
-
         mocha.run(function (failures) {
           config.logger.warn = warn;
           callback(failures);
