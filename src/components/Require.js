@@ -85,12 +85,9 @@ const Require = {
     const script = vm.createScript(source, file);
     try {
       script.runInNewContext(context);
-    } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error));
-      process.exit(1);
+    } finally {
+      process.chdir(old_cwd);
     }
-
-    process.chdir(old_cwd);
 
     return m.exports;
   }

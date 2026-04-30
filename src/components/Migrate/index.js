@@ -7,7 +7,6 @@ const { expect } = require('../../lib/utils');
 const Deployer = require('../Deployer');
 
 const TronWrap = require('../TronWrap');
-const logErrorAndExit = require('../TronWrap').logErrorAndExit;
 const waitForTransactionReceipt = require('../waitForTransactionReceipt');
 let tronWrap;
 
@@ -82,19 +81,24 @@ Migration.prototype.run = function (options, callback) {
         return options.artifactor.saveAll(resolver.contracts());
       })
       .then(function () {
-        // Use process.nextTicK() to prevent errors thrown in the callback from triggering the below catch()
+        // Use process.nextTick() to prevent errors thrown in the callback from triggering the below catch()
         process.nextTick(callback);
       })
       .catch(function (e) {
-        logErrorAndExit(logger, e);
+        callback(e);
       });
   };
-  const fn = Require.file({
-    file: self.file,
-    context: context,
-    resolver: resolver,
-    args: [deployer]
-  });
+  let fn;
+  try {
+    fn = Require.file({
+      file: self.file,
+      context: context,
+      resolver: resolver,
+      args: [deployer]
+    });
+  } catch (err) {
+    return callback(err);
+  }
 
   if (!fn || !fn.length || fn.length === 0) {
     return callback(new Error('Migration ' + self.file + ' invalid or does not take any parameters'));

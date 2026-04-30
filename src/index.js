@@ -20,7 +20,7 @@ if (commands[0] === '--download-compiler' && commands[1]) {
       if (typeof err === 'number') {
         // If a number is returned, exit with that number.
         process.exit(err);
-      } else if (err instanceof Error) {
+      } else if (err && typeof err.message === 'string') {
         console.error(chalk.red(chalk.bold('ERROR:'), err.message));
       } else {
         // Handle other types (string, object, etc.)
