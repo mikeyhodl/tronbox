@@ -1,8 +1,4 @@
 const provision = function (abstraction, options) {
-  if (options.provider) {
-    abstraction.setProvider(options.provider);
-  }
-
   if (options.network_id) {
     abstraction.setNetwork(options.network_id);
   }

@@ -44,7 +44,6 @@ Migration.prototype.run = function (options, callback) {
     },
     network: options.network,
     network_id: options.network_id,
-    provider: options.provider,
     basePath: path.dirname(this.file)
   });
 
@@ -145,7 +144,6 @@ const Migrate = {
       'working_directory',
       'migrations_directory',
       'contracts_build_directory',
-      'provider',
       'artifactor',
       'resolver',
       'network',
@@ -195,70 +193,16 @@ const Migrate = {
   },
 
   runMigrations: function (migrations, options, callback) {
-    // Perform a shallow clone of the options object
-    // so that we can override the provider option without
-    // changing the original options object passed in.
-    const clone = {};
-
-    Object.keys(options).forEach(function (key) {
-      clone[key] = options[key];
-    });
-
-    clone.provider = this.wrapProvider(options.provider, clone.logger);
-    clone.resolver = this.wrapResolver(options.resolver, clone.provider);
-
     async.eachSeries(
       migrations,
       function (migration, finished) {
-        migration.run(clone, function (err) {
+        migration.run(options, function (err) {
           if (err) return finished(err);
           finished();
         });
       },
       callback
     );
-  },
-
-  wrapProvider: function (provider, logger) {
-    const printTransaction = function (tx_hash) {
-      logger.log('  ... ' + tx_hash);
-    };
-
-    return {
-      send: function (payload) {
-        const result = provider.send(payload);
-
-        if (payload.method === 'eth_sendTransaction') {
-          printTransaction(result.result);
-        }
-
-        return result;
-      },
-      sendAsync: function (payload, callback) {
-        provider.sendAsync(payload, function (err, result) {
-          if (err) return callback(err);
-
-          if (payload.method === 'eth_sendTransaction') {
-            printTransaction(result.result);
-          }
-
-          callback(err, result);
-        });
-      }
-    };
-  },
-
-  wrapResolver: function (resolver, provider) {
-    return {
-      require: function (import_path, search_path) {
-        const abstraction = resolver.require(import_path, search_path);
-
-        abstraction.setProvider(provider);
-
-        return abstraction;
-      },
-      resolve: resolver.resolve
-    };
   },
 
   lastCompletedMigration: function (options, callback) {

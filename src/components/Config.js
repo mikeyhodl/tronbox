@@ -1,7 +1,6 @@
 const _ = require('lodash');
 const path = require('path');
 const { constants } = require('./TronWrap');
-const Provider = require('./Provider');
 const TronBoxError = require('../lib/errors/tronboxerror');
 const Module = require('module');
 const findUp = require('find-up');
@@ -295,22 +294,6 @@ function Config() {
       set: function () {
         throw new Error(
           "Don't set config.tokenId directly. Instead, set config.networks and then config.networks[<network name>].tokenId"
-        );
-      }
-    },
-    provider: {
-      get: function () {
-        if (!self.network) {
-          return null;
-        }
-
-        const options = self.network_config;
-        options.verboseRpc = self.verboseRpc;
-        return Provider.create(options);
-      },
-      set: function () {
-        throw new Error(
-          "Don't set config.provider directly. Instead, set config.networks and then set config.networks[<network name>].provider"
         );
       }
     },

@@ -26,8 +26,7 @@ const Test = {
       'migrations_directory',
       'test_files',
       'network',
-      'network_id',
-      'provider'
+      'network_id'
     ]);
 
     const config = Config.default().merge(options);

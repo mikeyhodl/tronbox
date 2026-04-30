@@ -3,20 +3,7 @@ const TronWrap = require('../TronWrap');
 const { constants } = require('../TronWrap');
 const BigNumber = require('bignumber.js');
 
-// Planned for future features, logging, etc.
-function Provider(provider) {
-  this.provider = provider;
-}
-
 let tronWrap;
-
-Provider.prototype.send = function () {
-  return this.provider.send.apply(this.provider, arguments);
-};
-
-Provider.prototype.sendAsync = function () {
-  return this.provider.sendAsync.apply(this.provider, arguments);
-};
 
 const Utils = {
   is_object: function (val) {
@@ -112,20 +99,8 @@ Contract._static_methods = {
     }
   },
 
-  setProvider: function (provider) {
-    if (!provider) {
-      throw new Error('Invalid provider passed to setProvider(); provider is ' + provider);
-    }
-
-    this.currentProvider = provider;
-  },
-
   new: function () {
     const self = this;
-
-    if (!this.currentProvider) {
-      throw new Error(this.contractName + ' error: Please call setProvider() first before calling new().');
-    }
 
     const [args, params] = filterEnergyParameter(Array.prototype.slice.call(arguments));
 
@@ -213,9 +188,6 @@ Contract._static_methods = {
 
   at: function (address) {
     const newContract = this.clone(JSON.parse(JSON.stringify(this._json)));
-    if (this.provider) {
-      newContract.setProvider(this.provider);
-    }
     if (this.network_id) {
       newContract.setNetwork(this.network_id);
     }

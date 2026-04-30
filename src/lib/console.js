@@ -27,7 +27,6 @@ function Console(tasks, options) {
     'migrations_directory',
     'network',
     'network_id',
-    'provider',
     'resolver',
     'build_directory'
   ]);
@@ -47,8 +46,6 @@ function Console(tasks, options) {
   } catch (err) {
     logErrorAndExit(console, err.message);
   }
-
-  // this.tronWrap.setHttpProvider(options.provider);
 
   // Bubble the ReplManager's exit event
   this.repl.on('exit', function () {
