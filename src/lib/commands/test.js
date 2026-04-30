@@ -93,13 +93,13 @@ Usage: $0 test [<files...>] [--file <file>]
     function getFiles(callback) {
       if (files.length !== 0) {
         const workingDirectoryPath = path.resolve(config.working_directory);
-        files.forEach(file => {
+        for (const file of files) {
           const resolvedPath = path.resolve(process.cwd(), file);
           const relative = path.relative(workingDirectoryPath, resolvedPath);
           if (relative.startsWith('..') || path.isAbsolute(relative)) {
             return callback(new Error(`${file} is outside the project directory.`));
           }
-        });
+        }
         return callback(null, files);
       }
 
