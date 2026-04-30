@@ -1,6 +1,6 @@
 const dir = require('node-dir');
 const path = require('path');
-const ResolverIntercept = require('./resolverintercept');
+const ResolverIntercept = require('../Resolver/intercept');
 const Require = require('../Require');
 const async = require('async');
 const { expect } = require('../../lib/utils');

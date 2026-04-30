@@ -19,9 +19,7 @@ ResolverIntercept.prototype.require = function (import_path) {
 
   this.cache[import_path] = resolved;
 
-  // During migrations, we could be on a network that takes a long time to accept
-  // transactions (i.e., contract deployment close to block size). Because successful
-  // migration is more important than wait time in those cases, we'll synchronize "forever".
+  // The chain may be slow to accept transactions; never time out the wait.
   resolved.synchronization_timeout = 0;
 
   return resolved;
