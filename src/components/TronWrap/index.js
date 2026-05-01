@@ -11,16 +11,6 @@ let instance;
 let privateKeyByAccount = {};
 let ethersWallets = {};
 
-function toNumber(value) {
-  if (!value) return null;
-  if (typeof value === 'string') {
-    value = /^0x/.test(value) ? value : '0x' + value;
-  } else {
-    value = value.toNumber();
-  }
-  return value;
-}
-
 function filterMatchFunction(method, abi) {
   let methodObj = abi.filter(item => item.name === method);
   if (!methodObj || methodObj.length === 0) {
@@ -158,7 +148,6 @@ function init(options, extraOptions = {}) {
     getPrivateKey()
   );
 
-  tronWrap._toNumber = toNumber;
   tronWrap.EventList = [];
   tronWrap.filterMatchFunction = filterMatchFunction;
 
