@@ -65,16 +65,7 @@ function setupTempDirectory() {
 }
 
 function fetchRepository(url, dir) {
-  return new Promise(function (accept, reject) {
-    // Download the package from github.
-    ghdownload(url, dir)
-      .on('error', function (err) {
-        reject(err);
-      })
-      .on('end', function () {
-        accept();
-      });
-  });
+  return ghdownload(url, dir);
 }
 
 function copyTempIntoDestination(tmpDir, destination) {

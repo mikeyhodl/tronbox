@@ -1,235 +1,122 @@
-/**
- * Portions of this code are derived from node-github-download
- * Copyright (c) 2013 JP Richardson
- * Licensed under the MIT License
- * Original source: https://github.com/jprichardson/node-github-download
- *
- * Modified for TronBox:
- * - Replaced 'request' library with 'axios' for HTTP requests
- * - Updated to use modern JavaScript patterns
- * - Modified ZIP handling to use 'yauzl' instead of 'adm-zip'
- */
-
-const EventEmitter = require('events').EventEmitter;
 const vcsurl = require('vcsurl');
 const axios = require('axios');
 const path = require('path');
 const fs = require('fs-extra');
-const util = require('util');
 const crypto = require('crypto');
+const yauzl = require('yauzl');
 
 const cwd = process.cwd();
 
-function GithubDownloader(user, repo, ref, dir) {
-  this.user = user;
-  this.repo = repo;
-  this.ref = ref || 'master';
-  this.dir = dir;
-  this._log = [];
-  this._getZip = false;
-}
-util.inherits(GithubDownloader, EventEmitter);
-
-GithubDownloader.prototype.start = function () {
-  const _this = this;
-  const initialUrl = 'https://api.github.com/repos/' + this.user + '/' + this.repo + '/contents/';
-  const initialUrlRef = this.ref ? '?ref=' + this.ref : '';
-  const rawUrl = 'https://raw.github.com/' + this.user + '/' + this.repo + '/' + this.ref + '/';
-  let pending = 0;
-  let gonnaProcess = 0;
-
-  gonnaProcess += 1;
-  requestJSON.call(this, initialUrl + initialUrlRef, processItems);
-
-  function processItems(items) {
-    pending += items.length;
-    gonnaProcess -= 1;
-    items.forEach(handleItem);
-    checkDone();
-  }
-
-  function handleItem(item) {
-    if (item.type === 'dir') {
-      const dir = path.join(_this.dir, item.path);
-      fs.mkdirs(dir, function (err) {
-        if (err) _this.emit('error', err);
-        _this._log.push(dir);
-        gonnaProcess += 1;
-        requestJSON.call(_this, initialUrl + item.path + initialUrlRef, processItems);
-        _this.emit('dir', item.path);
-        pending -= 1;
-        checkDone();
-      });
-    } else if (item.type === 'file') {
-      const file = path.join(_this.dir, item.path);
-      fs.createFile(file, function (err) {
-        if (err) _this.emit('error', err);
-        axios
-          .get(rawUrl + item.path, { responseType: 'stream' })
-          .then(response => {
-            response.data.pipe(fs.createWriteStream(file)).on('close', function () {
-              _this._log.push(file);
-              _this.emit('file', item.path);
-              pending -= 1;
-              checkDone();
-            });
-          })
-          .catch(err => _this.emit('error', err));
-      });
-    } else {
-      _this.emit('error', new Error(JSON.stringify(item, null, 2) + '\n does not have type.'));
-    }
-  }
-
-  function checkDone() {
-    if (pending === 0 && gonnaProcess === 0 && !_this._getZip) {
-      _this.emit('end');
-    }
-  }
-
-  return this;
-};
-
-module.exports = function GithubDownload(params, dir) {
+function parseParams(params) {
   if (typeof params === 'string') {
-    const pieces = params.split('#');
-    const ref = pieces[1];
-    const url = (vcsurl(pieces[0]) || pieces[0]).split('/');
-    params = { user: url[url.length - 2], repo: url[url.length - 1], ref: ref };
+    const [repoPart, ref] = params.split('#');
+    const url = (vcsurl(repoPart) || repoPart).split('/');
+    return { user: url[url.length - 2], repo: url[url.length - 1], ref };
   }
-
-  if (typeof params !== 'object') {
-    throw new Error('Invalid parameter type. Should be repo URL string or object containing repo and user.');
+  if (params && typeof params === 'object') {
+    return params;
   }
-
-  dir = dir || process.cwd();
-  const gh = new GithubDownloader(params.user, params.repo, params.ref, dir);
-  return gh.start();
-};
-
-// PRIVATE METHODS
-
-function requestJSON(url, callback) {
-  const _this = this;
-  axios
-    .get(url)
-    .then(response => {
-      callback(response.data);
-    })
-    .catch(err => {
-      if (err.response && err.response.status === 403) {
-        return downloadZip.call(_this);
-      }
-      if (err.response && err.response.status !== 200) {
-        _this.emit('error', new Error(url + ': returned ' + err.response.status + '\n\nbody:\n' + err.response.data));
-      } else {
-        _this.emit('error', err);
-      }
-    });
-}
-
-function extractZip(zipFile, outputDir, callback) {
-  const yauzl = require('yauzl');
-  const _this = this;
-
-  yauzl.open(zipFile, { lazyEntries: true }, (err, zipfile) => {
-    if (err) return _this.emit('error', err);
-
-    let folderName = null;
-    let pending = 0;
-
-    zipfile.on('entry', entry => {
-      if (!folderName && entry.fileName.includes('/')) {
-        folderName = entry.fileName.split('/')[0];
-      }
-
-      if (/\/$/.test(entry.fileName)) {
-        // Directory entry
-        zipfile.readEntry();
-      } else {
-        // File entry
-        pending++;
-        zipfile.openReadStream(entry, (err, readStream) => {
-          if (err) return _this.emit('error', err);
-
-          const file = path.resolve(outputDir, entry.fileName);
-          const normalizedOutputDir = path.resolve(outputDir);
-          const relative = path.relative(normalizedOutputDir, file);
-          if (relative.startsWith('..') || path.isAbsolute(relative)) {
-            return _this.emit(
-              'error',
-              new Error(`Refusing to extract unsafe zip entry outside destination: ${entry.fileName}`)
-            );
-          }
-
-          fs.ensureDir(path.dirname(file), err => {
-            if (err) return _this.emit('error', err);
-
-            const writeStream = fs.createWriteStream(file);
-            readStream.pipe(writeStream);
-
-            writeStream.on('close', () => {
-              pending--;
-              if (pending === 0) {
-                callback(folderName || path.basename(zipFile, '.zip'));
-              }
-            });
-
-            writeStream.on('error', err => _this.emit('error', err));
-          });
-        });
-        zipfile.readEntry();
-      }
-    });
-
-    zipfile.on('end', () => {
-      if (pending === 0) {
-        callback(folderName || path.basename(zipFile, '.zip'));
-      }
-    });
-
-    zipfile.readEntry();
-  });
-}
-
-function downloadZip() {
-  const _this = this;
-  if (_this._getZip) return;
-  _this._getZip = true;
-
-  _this._log.forEach(function (file) {
-    fs.removeSync(file);
-  });
-
-  const tmpdir = generateTempDir();
-  const zipBaseDir = _this.repo + '-' + _this.ref;
-  const zipFile = path.join(tmpdir, zipBaseDir + '.zip');
-
-  const zipUrl = 'https://github.com/' + _this.user + '/' + _this.repo + '/archive/' + _this.ref + '.zip';
-  _this.emit('zip', zipUrl);
-
-  fs.mkdir(tmpdir, function (err) {
-    if (err) _this.emit('error', err);
-    axios
-      .get(zipUrl, { responseType: 'stream' })
-      .then(response => {
-        response.data.pipe(fs.createWriteStream(zipFile)).on('close', function () {
-          extractZip.call(_this, zipFile, tmpdir, function (extractedFolderName) {
-            const oldPath = path.join(tmpdir, extractedFolderName);
-            fs.rename(oldPath, _this.dir, function (err) {
-              if (err) _this.emit('error', err);
-              fs.remove(tmpdir, function (err) {
-                if (err) _this.emit('error', err);
-                _this.emit('end');
-              });
-            });
-          });
-        });
-      })
-      .catch(err => _this.emit('error', err));
-  });
+  throw new Error('Invalid parameter type. Should be repo URL string or object containing repo and user.');
 }
 
 function generateTempDir() {
   return path.join(cwd, Date.now().toString() + '-' + crypto.randomBytes(16).toString('hex'));
 }
+
+function streamToFile(stream, file) {
+  return new Promise((resolve, reject) => {
+    stream.pipe(fs.createWriteStream(file)).on('close', resolve).on('error', reject);
+  });
+}
+
+function extractZip(zipFile, outputDir) {
+  return new Promise((resolve, reject) => {
+    yauzl.open(zipFile, { lazyEntries: true }, (err, zipfile) => {
+      if (err) return reject(err);
+
+      const normalizedOutputDir = path.resolve(outputDir);
+      let folderName = null;
+      let pending = 0;
+      let ended = false;
+      let failed = false;
+
+      const fail = e => {
+        if (failed) return;
+        failed = true;
+        zipfile.close();
+        reject(e);
+      };
+
+      const maybeFinish = () => {
+        if (failed || !ended || pending !== 0) return;
+        resolve(folderName || path.basename(zipFile, '.zip'));
+      };
+
+      zipfile.on('entry', entry => {
+        if (failed) return;
+
+        if (!folderName && entry.fileName.includes('/')) {
+          folderName = entry.fileName.split('/')[0];
+        }
+
+        if (/\/$/.test(entry.fileName)) {
+          zipfile.readEntry();
+          return;
+        }
+
+        const file = path.resolve(outputDir, entry.fileName);
+        const relative = path.relative(normalizedOutputDir, file);
+        if (relative.startsWith('..') || path.isAbsolute(relative)) {
+          return fail(new Error(`Refusing to extract unsafe zip entry outside destination: ${entry.fileName}`));
+        }
+
+        pending++;
+        zipfile.openReadStream(entry, (err, readStream) => {
+          if (err) return fail(err);
+
+          fs.ensureDir(path.dirname(file), err => {
+            if (err) return fail(err);
+
+            const writeStream = fs.createWriteStream(file);
+            readStream.pipe(writeStream);
+            writeStream.on('close', () => {
+              pending--;
+              maybeFinish();
+            });
+            writeStream.on('error', fail);
+          });
+        });
+        zipfile.readEntry();
+      });
+
+      zipfile.on('end', () => {
+        ended = true;
+        maybeFinish();
+      });
+
+      zipfile.on('error', fail);
+      zipfile.readEntry();
+    });
+  });
+}
+
+module.exports = async function downloadRepo(params, dir) {
+  const { user, repo, ref } = parseParams(params);
+  const targetRef = ref || 'master';
+  const targetDir = dir || process.cwd();
+
+  const tmpDir = generateTempDir();
+  const zipFile = path.join(tmpDir, `${repo}-${targetRef}.zip`);
+  const zipUrl = `https://github.com/${user}/${repo}/archive/${targetRef}.zip`;
+
+  await fs.mkdir(tmpDir);
+  try {
+    const response = await axios.get(zipUrl, { responseType: 'stream' });
+    await streamToFile(response.data, zipFile);
+
+    const extractedFolder = await extractZip(zipFile, tmpDir);
+    await fs.move(path.join(tmpDir, extractedFolder), targetDir, { overwrite: true });
+  } finally {
+    await fs.remove(tmpDir);
+  }
+};
