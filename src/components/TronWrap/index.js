@@ -269,8 +269,8 @@ function init(options, extraOptions = {}) {
 
     const myContract = this.contract();
     const originEnergyLimit = option.originEnergyLimit || this.networkConfig.originEnergyLimit;
-    if (originEnergyLimit < 0 || originEnergyLimit > constants.deployParameters.originEnergyLimit) {
-      throw new Error('Origin Energy Limit must be > 0 and <= 10,000,000');
+    if (originEnergyLimit <= 0) {
+      throw new Error('Origin Energy Limit must be > 0');
     }
 
     const userFeePercentage =
