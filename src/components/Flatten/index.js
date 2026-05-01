@@ -24,7 +24,12 @@ async function resolve(importPath) {
       });
     });
   } catch (error) {
-    throw new Error(importPath + ' not found or is outside the project directory.');
+    let display = importPath;
+    if (path.isAbsolute(importPath)) {
+      const rel = path.relative(config.working_directory, importPath);
+      if (!rel.startsWith('..') && !path.isAbsolute(rel)) display = rel;
+    }
+    throw new Error(display + ' not found or is outside the project directory.');
   }
 }
 
@@ -90,7 +95,7 @@ async function dependenciesDfs(sortedFiles, visitedFiles, processing, filePath) 
   sortedFiles.push(filePath);
 }
 
-async function getSortedFilePaths(entryPoints, projectRoot) {
+async function getSortedFilePaths(entryPoints) {
   const sortedFiles = [];
   const visitedFiles = new Set();
   const processing = new Set();
@@ -101,11 +106,7 @@ async function getSortedFilePaths(entryPoints, projectRoot) {
     await dependenciesDfs(sortedFiles, visitedFiles, processing, entryPoint);
   }
 
-  const files = sortedFiles.map(f => {
-    return fileNameToGlobalName(f, projectRoot);
-  });
-
-  return files;
+  return sortedFiles;
 }
 
 function fileNameToGlobalName(fileName, projectRoot) {
@@ -238,16 +239,16 @@ const Flatten = {
   run: function (filePaths, callback) {
     const config = Config.detect({});
     const projectRoot = config.working_directory;
-    const filePathsFromProjectRoot = getFilePathsFromProjectRoot(filePaths, projectRoot);
+    const absoluteFilePaths = filePaths.map(f => path.resolve(process.cwd(), f));
 
     let res = `// Sources flattened with TronBox v${packageJson.version} ${packageJson.homepage}`;
-    getSortedFilePaths(filePathsFromProjectRoot, projectRoot)
+    getSortedFilePaths(absoluteFilePaths)
       .then(async sortedFiles => {
         const fileContents = await Promise.all(
           sortedFiles.map(async file => {
             const resolved = await resolve(file);
             return {
-              file,
+              file: fileNameToGlobalName(file, projectRoot),
               content: resolved.fileContents,
               packageInfo: resolved.packageInfo
             };
@@ -293,15 +294,9 @@ const Flatten = {
 
             callback();
           })
-          .catch(e => {
-            console.error(chalk.red(chalk.bold('ERROR:'), e.message ? e.message : e));
-            callback();
-          });
+          .catch(callback);
       })
-      .catch(e => {
-        console.error(chalk.red(chalk.bold('ERROR:'), e.message ? e.message : e));
-        callback();
-      });
+      .catch(callback);
   }
 };
 
