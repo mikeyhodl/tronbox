@@ -1,7 +1,6 @@
 const fs = require('fs-extra');
 const path = require('path');
 const axios = require('axios');
-const vcsurl = require('vcsurl');
 const tmp = require('tmp');
 const { spawnSync } = require('child_process');
 const ghdownload = require('./download');
@@ -27,14 +26,11 @@ function verifyURL(url) {
   // Next let's see if the expected repository exists. If it doesn't, ghdownload
   // will fail spectacularly in a way we can't catch, so we have to do it ourselves.
   return new Promise(function (accept, reject) {
-    const repoURL = new URL(vcsurl(url));
-    const ref = repoURL.hash ? repoURL.hash.slice(1) : 'master';
-    repoURL.hash = '';
-    const configURL = new URL(
-      repoURL.toString().replace('github.com', 'raw.githubusercontent.com') + `/${ref}/tronbox.js`
-    );
-
-    const targetUrl = 'https://' + configURL.host + configURL.pathname;
+    const [repoPart, ref = 'master'] = url.split('#');
+    const parts = repoPart.replace(/\.git$/, '').split(/[:/]/);
+    const user = parts[parts.length - 2];
+    const repo = parts[parts.length - 1];
+    const targetUrl = `https://raw.githubusercontent.com/${user}/${repo}/${ref}/tronbox.js`;
 
     axios
       .head(targetUrl)

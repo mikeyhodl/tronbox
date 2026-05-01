@@ -1,4 +1,3 @@
-const vcsurl = require('vcsurl');
 const axios = require('axios');
 const path = require('path');
 const fs = require('fs-extra');
@@ -10,8 +9,8 @@ const cwd = process.cwd();
 function parseParams(params) {
   if (typeof params === 'string') {
     const [repoPart, ref] = params.split('#');
-    const url = (vcsurl(repoPart) || repoPart).split('/');
-    return { user: url[url.length - 2], repo: url[url.length - 1], ref };
+    const parts = repoPart.replace(/\.git$/, '').split(/[:/]/);
+    return { user: parts[parts.length - 2], repo: parts[parts.length - 1], ref };
   }
   if (params && typeof params === 'object') {
     return params;
