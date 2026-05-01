@@ -27,8 +27,11 @@ function verifyURL(url) {
   // Next let's see if the expected repository exists. If it doesn't, ghdownload
   // will fail spectacularly in a way we can't catch, so we have to do it ourselves.
   return new Promise(function (accept, reject) {
+    const repoURL = new URL(vcsurl(url));
+    const ref = repoURL.hash ? repoURL.hash.slice(1) : 'master';
+    repoURL.hash = '';
     const configURL = new URL(
-      vcsurl(url).replace('github.com', 'raw.githubusercontent.com').replace(/#.*/, '') + '/master/tronbox.js'
+      repoURL.toString().replace('github.com', 'raw.githubusercontent.com') + `/${ref}/tronbox.js`
     );
 
     const targetUrl = 'https://' + configURL.host + configURL.pathname;
