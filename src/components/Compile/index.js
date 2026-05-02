@@ -1,7 +1,7 @@
 const Profiler = require('./profiler');
 const OS = require('os');
 const path = require('path');
-const CompileError = require('./compileerror');
+const CompileError = require('../../lib/errors/compileError');
 const { expect, findContracts } = require('../../lib/utils');
 const Config = require('../Config');
 

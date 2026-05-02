@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const path = require('path');
 const { constants } = require('./TronWrap');
-const TronBoxError = require('../lib/errors/tronboxerror');
+const TronBoxError = require('../lib/errors/tronBoxError');
 const Module = require('module');
 const findUp = require('find-up');
 const originalrequire = require('original-require');

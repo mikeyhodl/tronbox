@@ -1,4 +1,4 @@
-const TronBoxError = require('./errors/tronboxerror');
+const TronBoxError = require('./errors/tronBoxError');
 const { expect } = require('./utils');
 const Resolver = require('../components/Resolver');
 const Artifactor = require('../components/Artifactor');
@@ -31,7 +31,7 @@ const Environment = {
 
     if (!network_id) {
       return callback(
-        new Error(
+        new TronBoxError(
           "You must specify a network_id in your '" + config.network + "' configuration in order to use this network."
         )
       );

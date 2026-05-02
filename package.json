@@ -25,7 +25,6 @@
     "bignumber.js": "7.2.1",
     "chai": "4.1.2",
     "chalk": "2.4.2",
-    "colors": "1.4.0",
     "debug": "3.2.7",
     "enquirer": "2.4.1",
     "ethers": "6.15.0",

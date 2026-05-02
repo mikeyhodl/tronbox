@@ -7,7 +7,7 @@ const fs = require('fs');
 const Graph = require('graphlib').Graph;
 const Parser = require('./parser');
 const { expect, findContracts } = require('../../lib/utils');
-const CompileError = require('./compileerror');
+const CompileError = require('../../lib/errors/compileError');
 const { INVALID_IMPORT_MESSAGE } = require('../Resolver/validate');
 
 module.exports = {
