@@ -42,7 +42,7 @@ FS.prototype.require = function (import_path, search_path) {
     return null;
   }
 
-  const contract_name = this.getContractName(import_path, search_path);
+  const contract_name = path.basename(import_path, '.sol');
 
   try {
     const result = fs.readFileSync(path.join(search_path, contract_name + '.json'), 'utf8');
@@ -50,23 +50,6 @@ FS.prototype.require = function (import_path, search_path) {
   } catch (e) {
     return null;
   }
-};
-
-FS.prototype.getContractName = function (sourcePath, searchPath) {
-  searchPath = searchPath || this.contracts_build_directory;
-
-  for (const filename of fs.readdirSync(searchPath)) {
-    try {
-      const artifact = JSON.parse(fs.readFileSync(path.resolve(searchPath, filename)));
-      if (artifact.sourcePath === sourcePath) {
-        return artifact.contractName;
-      }
-    } catch (e) {
-      // skip unreadable / non-JSON entries
-    }
-  }
-
-  return path.basename(sourcePath, '.sol');
 };
 
 FS.prototype.resolve = function (import_path, imported_from, callback) {
