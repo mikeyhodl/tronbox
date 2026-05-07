@@ -483,7 +483,7 @@ function init(options, extraOptions = {}) {
         if (error) throw error.message ? error.message : error;
       } catch (error) {
         const err = error.message ? error.message : error;
-        throw new Error(err);
+        throw new Error(`TRE RPC '${method}': ${err}`);
       }
     };
 
