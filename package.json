@@ -12,7 +12,10 @@
   ],
   "scripts": {
     "build": "scripts/build.sh",
-    "test": "npm run build && cd test && sh runTest.sh",
+    "pretest": "npm install --prefix test/fixture --no-progress --silent",
+    "test": "[ -f test/.env ] && . test/.env; mocha 'test/*.test.js' --ignore 'test/*.testnet.test.js'",
+    "test:testnet": "[ -f test/.env ] && . test/.env; mocha 'test/*.testnet.test.js'",
+    "test:all": "npm test && npm run test:testnet",
     "prepare": "npm run build",
     "lint": "eslint \"src/**/*.js\" \"test/**/*.js\"",
     "format": "prettier --write \"src/**/*.js\" \"test/**/*.js\""

@@ -1,0 +1,12 @@
+{
+  "name": "tronbox-test-fixture",
+  "version": "1.0.0",
+  "description": "Test fixture project for Tronbox integration tests.",
+  "private": true,
+  "license": "MIT",
+  "dependencies": {
+    "@openzeppelin/contracts": "5.4.0",
+    "picocolors": "1.1.1",
+    "sol-mock": "file:./packages/sol-mock"
+  }
+}
