@@ -12,10 +12,10 @@
 node_modules
 
 # Project files not needed in published package
-assets
-scripts
-src
-test
+/assets
+/scripts
+/src
+/test
 .babelrc
 .githooks
 .prettierrc.json
