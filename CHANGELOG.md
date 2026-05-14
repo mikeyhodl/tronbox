@@ -1,3 +1,14 @@
+**4.7.1**
+
+### Dependencies
+
+- Upgraded `axios` from 1.15.0 to 1.16.1
+- Added a `tronweb` override to align nested `axios` resolution with 1.16.1
+
+### Packaging
+
+- Normalized root-level `.npmignore` exclusions for published packages
+
 **4.7.0**
 
 ### Features
