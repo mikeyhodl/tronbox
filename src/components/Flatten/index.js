@@ -264,7 +264,7 @@ const Flatten = {
 
         printFileContents(fileContents, str => (res += str))
           .then(() => {
-            process.stdout.write(res);
+            const flushed = process.stdout.write(res);
 
             if (filesWithoutLicenses.length > 0) {
               console.warn(
@@ -292,7 +292,8 @@ const Flatten = {
               );
             }
 
-            callback();
+            if (flushed) callback();
+            else process.stdout.once('drain', callback);
           })
           .catch(callback);
       })
