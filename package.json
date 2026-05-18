@@ -1,7 +1,7 @@
 {
   "name": "tronbox",
   "namespace": "tronprotocol",
-  "version": "4.7.0",
+  "version": "4.7.1",
   "description": "TronBox - Simple development framework for Tron",
   "keywords": [
     "TronBox",
@@ -24,7 +24,7 @@
     "@solidity-parser/parser": "0.20.2",
     "ajv": "6.14.0",
     "async": "2.6.4",
-    "axios": "1.15.0",
+    "axios": "1.16.1",
     "bignumber.js": "7.2.1",
     "chai": "4.1.2",
     "chalk": "2.4.2",
@@ -61,6 +61,9 @@
   "overrides": {
     "mocha": {
       "serialize-javascript": "7.0.5"
+    },
+    "tronweb": {
+      "axios": "1.16.1"
     }
   },
   "bin": {
