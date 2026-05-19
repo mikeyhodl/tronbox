@@ -2,7 +2,6 @@ const fs = require('fs');
 const path = require('path');
 const Module = require('module');
 const vm = require('vm');
-const originalrequire = require('original-require');
 const { expect } = require('../lib/utils');
 const Config = require('./Config');
 
@@ -13,83 +12,59 @@ const Config = require('./Config');
 //   function is run.
 const Require = {
   file: options => {
-    const file = options.file;
+    const file = path.resolve(options.file);
 
     expect.options(options, ['file']);
 
     options = Config.default().with(options);
 
-    const source = fs.readFileSync(options.file, { encoding: 'utf8' });
+    const source = fs.readFileSync(file, { encoding: 'utf8' });
 
-    // Modified from here: https://gist.github.com/anatoliychakkaev/1599423
-    const m = new Module(file);
+    const scriptModule = new Module(file);
 
     // Provide all the globals listed here: https://nodejs.org/api/globals.html
-    const context = {
-      Buffer: Buffer,
-      __dirname: path.dirname(file),
+    const sandbox = {
+      // CJS module-wrapper locals
       __filename: file,
-      clearImmediate: clearImmediate,
-      clearInterval: clearInterval,
-      clearTimeout: clearTimeout,
-      console: console,
-      // eslint-disable-next-line n/exports-style
-      exports: exports,
-      global: global,
-      module: m,
-      process: process,
-      require: pkgPath => {
-        // Ugh. Simulate a full require function for the file.
-        pkgPath = pkgPath.trim();
+      __dirname: path.dirname(file),
+      module: scriptModule,
+      exports: scriptModule.exports,
+      require: Module.createRequire(file),
 
-        // If absolute, just require.
-        if (path.isAbsolute(pkgPath)) return originalrequire(pkgPath);
+      // Node globals
+      Buffer,
+      clearImmediate,
+      clearInterval,
+      clearTimeout,
+      console,
+      global,
+      process,
+      setImmediate,
+      setInterval,
+      setTimeout,
 
-        // If relative, it's relative to the file.
-        if (pkgPath[0] === '.') {
-          return originalrequire(path.join(path.dirname(file), pkgPath));
-        } else {
-          // Not absolute, not relative, must be a globally or locally installed module.
-          // Try local first.
-          // Here we have to require from the node_modules directory directly.
-
-          let moduleDir = path.dirname(file);
-          while (true) {
-            try {
-              return originalrequire(path.join(moduleDir, 'node_modules', pkgPath));
-            } catch (e) {}
-            const oldModuleDir = moduleDir;
-            moduleDir = path.join(moduleDir, '..');
-            if (moduleDir === oldModuleDir) break;
-          }
-
-          // Try global, and let the error throw.
-          return originalrequire(pkgPath);
-        }
-      },
-      artifacts: options.resolver,
-      setImmediate: setImmediate,
-      setInterval: setInterval,
-      setTimeout: setTimeout
+      // TronBox injections
+      artifacts: options.resolver
     };
 
     // Now add contract names.
     Object.keys(options.context || {}).forEach(key => {
-      context[key] = options.context[key];
+      sandbox[key] = options.context[key];
     });
 
-    const old_cwd = process.cwd();
+    const context = vm.createContext(sandbox);
 
+    const old_cwd = process.cwd();
     process.chdir(path.dirname(file));
 
-    const script = vm.createScript(source, file);
+    const script = new vm.Script(source, { filename: file });
     try {
-      script.runInNewContext(context);
+      script.runInContext(context);
     } finally {
       process.chdir(old_cwd);
     }
 
-    return m.exports;
+    return scriptModule.exports;
   }
 };
 
