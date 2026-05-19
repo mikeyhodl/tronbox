@@ -4,7 +4,6 @@ const { constants } = require('./TronWrap');
 const TronBoxError = require('../lib/errors/tronBoxError');
 const Module = require('module');
 const findUp = require('find-up');
-const originalrequire = require('original-require');
 
 const DEFAULT_CONFIG_FILENAME = 'tronbox.js';
 const BACKUP_CONFIG_FILENAME = 'tronbox-config.js'; // For Windows + Command Prompt
@@ -413,7 +412,7 @@ Config.load = function (file, options) {
   // The require-nocache module used to do this for us, but
   // it doesn't bundle very well. So we've pulled it out ourselves.
   delete require.cache[Module._resolveFilename(file, module)];
-  const static_config = originalrequire(file);
+  const static_config = require(file);
 
   // Remove any `_allowExternalContractsBuildDirectory` property from the loaded config file.
   delete static_config._allowExternalContractsBuildDirectory;

@@ -8,7 +8,6 @@ const ResolverIntercept = require('../components/Resolver/intercept');
 const { expect } = require('./utils');
 const Migrate = require('../components/Migrate');
 const Profiler = require('../components/Compile/profiler');
-const originalrequire = require('original-require');
 const TronWrap = require('../components/TronWrap');
 const waitForTransactionReceipt = require('../components/waitForTransactionReceipt');
 
@@ -57,7 +56,7 @@ const Test = {
       // There's an idiosyncrasy in Mocha where the same file can't be run twice
       // unless we delete the `require` cache.
       // https://github.com/mochajs/mocha/issues/995
-      delete originalrequire.cache[file];
+      delete require.cache[file];
 
       mocha.addFile(file);
     });
