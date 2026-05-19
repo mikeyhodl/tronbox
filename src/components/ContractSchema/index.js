@@ -1,4 +1,4 @@
-const pkgVersion = '2.0.1';
+const SCHEMA_VERSION = '2.1.0';
 const Ajv = require('ajv');
 
 const contractObjectSchema = require('./spec/contract-object.spec.json');
@@ -70,7 +70,6 @@ const properties = {
   },
   source: {},
   sourcePath: {},
-  ast: {},
   compiler: {},
   networks: {
     transform: function (value) {
@@ -204,7 +203,7 @@ const TronBoxContractSchema = {
     });
 
     // update schema version
-    normalized.schemaVersion = pkgVersion;
+    normalized.schemaVersion = SCHEMA_VERSION;
 
     if (options.validate) {
       this.validate(normalized);

@@ -2,7 +2,7 @@
   "id": "contract-object.spec.json",
   "$schema": "http://json-schema.org/schema#",
   "title": "Contract Object",
-  "description": "Describes a contract consumable by Truffle, possibly including deployed instances on networks",
+  "description": "Describes a TronBox compiled contract artifact, possibly including deployed instances on networks.",
   "type": "object",
   "properties": {
     "contractName": {
@@ -72,9 +72,6 @@
     "sourcePath": {
       "$ref": "#/definitions/SourcePath"
     },
-    "ast": {
-      "$ref": "#/definitions/AST"
-    },
     "compiler": {
       "type": "object",
       "properties": {
@@ -142,9 +139,6 @@
     },
     "SourcePath": {
       "type": "string"
-    },
-    "AST": {
-      "type": "object"
     },
     "SchemaVersion": {
       "type": "string",

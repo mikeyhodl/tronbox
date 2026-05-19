@@ -169,7 +169,6 @@ const compile = function (sources, options, callback) {
         source: operatingSystemIndependentSources[source_path],
         sourceMap: contract.evm.bytecode.sourceMap,
         deployedSourceMap: contract.evm.deployedBytecode.sourceMap,
-        ast: standardOutput.sources[source_path].ast,
         abi: contract.abi,
         bytecode: '0x' + contract.evm.bytecode.object,
         deployedBytecode: '0x' + contract.evm.deployedBytecode.object,
@@ -179,10 +178,6 @@ const compile = function (sources, options, callback) {
           version: solc.version()
         }
       };
-
-      // Reorder ABI so functions are listed in the order they appear
-      // in the source file. Solidity tests need to execute in their expected sequence.
-      contract_definition.abi = orderABI(contract_definition);
 
       // Go through the link references and replace them with older-style
       // identifiers. We'll do this until we're ready to making a breaking
@@ -245,48 +240,6 @@ function replaceLinkReferences(bytecode, linkReferences, libraryName) {
   });
 
   return bytecode;
-}
-
-function orderABI(contract) {
-  const { abi, contract_name, ast } = contract;
-
-  if (!abi) {
-    return []; //Yul doesn't return ABIs, but we require something
-  }
-
-  if (!ast || !ast.nodes) {
-    return abi;
-  }
-
-  // AST can have multiple contract definitions, make sure we have the
-  // one that matches our contract
-  const contractDefinition = ast.nodes.find(
-    ({ nodeType, name }) => nodeType === 'ContractDefinition' && name === contract_name
-  );
-
-  if (!contractDefinition || !contractDefinition.nodes) {
-    return abi;
-  }
-
-  // Find all function definitions
-  const orderedFunctionNames = contractDefinition.nodes
-    .filter(({ nodeType }) => nodeType === 'FunctionDefinition')
-    .map(({ name: functionName }) => functionName);
-
-  // Put function names in a hash with their order, lowest first, for speed.
-  const functionIndexes = orderedFunctionNames
-    .map((functionName, index) => ({ [functionName]: index }))
-    .reduce((a, b) => Object.assign({}, a, b), {});
-
-  // Construct new ABI with functions at the end in source order
-  return [
-    ...abi.filter(({ name }) => functionIndexes[name] === undefined),
-
-    // followed by the functions in the source order
-    ...abi
-      .filter(({ name }) => functionIndexes[name] !== undefined)
-      .sort(({ name: a }, { name: b }) => functionIndexes[a] - functionIndexes[b])
-  ];
 }
 
 // contracts_directory: String. Directory where .sol files can be found.

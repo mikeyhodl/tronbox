@@ -692,14 +692,6 @@ Contract._properties = {
       this._json.sourcePath = val;
     }
   },
-  ast: {
-    get: function () {
-      return this._json.ast;
-    },
-    set: function (val) {
-      this._json.ast = val;
-    }
-  },
   compiler: {
     get: function () {
       return this._json.compiler;
