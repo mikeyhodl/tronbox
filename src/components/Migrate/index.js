@@ -103,7 +103,12 @@ Migration.prototype.run = function (options, callback) {
   if (!fn || !fn.length || fn.length === 0) {
     return callback(new Error('Migration ' + self.file + ' invalid or does not take any parameters'));
   }
-  const migrateFn = fn(deployer, options.network, options.networks[options.network].from);
+  let migrateFn;
+  try {
+    migrateFn = fn(deployer, options.network, options.networks[options.network].from);
+  } catch (err) {
+    return callback(err);
+  }
   finish(null, migrateFn);
 };
 
