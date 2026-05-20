@@ -17,8 +17,8 @@
     "test:testnet": "[ -f test/.env ] && . test/.env; mocha 'test/*.testnet.test.js'",
     "test:all": "npm test && npm run test:testnet",
     "prepare": "npm run build",
-    "lint": "eslint \"src/**/*.js\" \"test/**/*.js\"",
-    "format": "prettier --write \"src/**/*.js\" \"test/**/*.js\""
+    "lint": "eslint \"sample-projects/**/*.js\" \"src/**/*.js\" \"test/**/*.js\"",
+    "format": "prettier --write \"sample-projects/**/*.js\" \"src/**/*.js\" \"test/**/*.js\""
   },
   "dependencies": {
     "@solidity-parser/parser": "0.20.2",
