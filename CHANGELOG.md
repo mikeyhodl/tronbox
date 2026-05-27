@@ -14,6 +14,10 @@
 - Dropped `ast` from per-contract artifacts to shrink build output; the full AST is still emitted to `build_info_directory`
 - `compile` no longer supports contract files outside `contracts_directory`
 
+### Dependencies
+
+- Upgraded `tmp` from 0.0.33 to 0.2.6
+
 ### Removals
 
 - Removed `colors` dependency (chalk was already in use for the same purpose)

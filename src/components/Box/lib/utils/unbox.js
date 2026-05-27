@@ -4,7 +4,6 @@ const axios = require('axios');
 const tmp = require('tmp');
 const { spawnSync } = require('child_process');
 const ghdownload = require('./download');
-const cwd = process.cwd();
 
 const config = require('../config');
 
@@ -55,7 +54,7 @@ function verifyURL(url) {
 
 function setupTempDirectory() {
   return new Promise(function (accept, reject) {
-    tmp.dir({ dir: cwd, unsafeCleanup: true }, function (err, dir, cleanupCallback) {
+    tmp.dir({ unsafeCleanup: true }, function (err, dir, cleanupCallback) {
       if (err) return reject(err);
 
       accept({ dir: path.join(dir, 'box'), cleanupCallback });
