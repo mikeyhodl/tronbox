@@ -1,6 +1,6 @@
+const path = require('path');
 const NPMSource = require('./npm');
 const FSSource = require('./fs');
-const whilst = require('async/whilst');
 const contract = require('../Contract');
 const { expect } = require('../../lib/utils');
 const provision = require('../Provisioner');
@@ -10,10 +10,9 @@ function Resolver(options) {
 
   this.options = options;
 
-  this.sources = [
-    new NPMSource(options.working_directory),
-    new FSSource(options.working_directory, options.contracts_build_directory)
-  ];
+  this.npmSource = new NPMSource(options.working_directory);
+  this.fsSource = new FSSource(options.working_directory, options.contracts_build_directory);
+  this.sources = [this.npmSource, this.fsSource];
 }
 
 // This function might be doing too much. If so, too bad (for now).
@@ -32,53 +31,31 @@ Resolver.prototype.require = function (import_path, search_path) {
   throw new Error('Could not find artifacts for ' + import_path + ' from any sources');
 };
 
+// Dispatch by import path style:
+//   absolute path or starts with '.' / '..' → file system
+//   anything else → npm package lookup
+// User-written absolute imports are rejected upstream by the profiler before
+// path normalization, so they don't reach the dispatcher.
 Resolver.prototype.resolve = function (import_path, imported_from, callback) {
-  const self = this;
-
   if (typeof imported_from === 'function') {
     callback = imported_from;
     imported_from = null;
   }
 
-  let resolved_body = null;
-  let resolved_path = null;
-  let resolved_package_info = null;
-  let current_index = -1;
-  let current_source;
+  const useFs = path.isAbsolute(import_path) || import_path.startsWith('.');
+  const source = useFs ? this.fsSource : this.npmSource;
 
-  whilst(
-    function () {
-      return !resolved_body && current_index < self.sources.length - 1;
-    },
-    function (next) {
-      current_index += 1;
-      current_source = self.sources[current_index];
-
-      current_source.resolve(import_path, imported_from, function (err, body, file_path, package_info) {
-        if (!err && body) {
-          resolved_body = body;
-          resolved_path = file_path;
-          resolved_package_info = package_info;
-        }
-        next(err);
-      });
-    },
-    function (err) {
-      if (err) return callback(err);
-
-      if (!resolved_body) {
-        let message = 'Could not find ' + import_path + ' from any sources';
-
-        if (imported_from) {
-          message += '; imported from ' + imported_from;
-        }
-
-        return callback(new Error(message));
+  source.resolve(import_path, imported_from, function (err, body, file_path, package_info) {
+    if (err) return callback(err);
+    if (!body) {
+      let message = 'Could not find ' + import_path + ' from any sources';
+      if (imported_from) {
+        message += '; imported from ' + imported_from;
       }
-
-      callback(null, resolved_body, resolved_path, current_source, resolved_package_info);
+      return callback(new Error(message));
     }
-  );
+    callback(null, body, file_path, source, package_info);
+  });
 };
 
 module.exports = Resolver;

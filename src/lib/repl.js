@@ -16,7 +16,6 @@ function ReplManager(options) {
     'migrations_directory',
     'network',
     'network_id',
-    'provider',
     'resolver',
     'build_directory'
   ]);

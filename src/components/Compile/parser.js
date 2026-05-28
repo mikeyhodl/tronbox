@@ -45,7 +45,7 @@ module.exports = {
     };
 
     const solc = getWrapper(options);
-    let output = solc[solc.compileStandard ? 'compileStandard' : 'compile'](JSON.stringify(solcStandardInput));
+    let output = solc.compile(JSON.stringify(solcStandardInput));
 
     output = JSON.parse(output);
 

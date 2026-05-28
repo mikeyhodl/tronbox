@@ -1,7 +1,7 @@
 const Profiler = require('./profiler');
 const OS = require('os');
 const path = require('path');
-const CompileError = require('./compileerror');
+const CompileError = require('../../lib/errors/compileError');
 const { expect, findContracts } = require('../../lib/utils');
 const Config = require('../Config');
 
@@ -40,21 +40,32 @@ const compile = function (sources, options, callback) {
 
   // Compile sources keyed by paths relative to contracts_directory, with
   // backslashes normalized to forward slashes so solc sees OS-independent keys.
+  // Sources outside contracts_directory aren't supported — they'd produce keys
+  // with leading '..' segments that solc normalizes away during import lookup,
+  // breaking the source-key match. Reject them with a clear error instead.
   const operatingSystemIndependentSources = {};
   const originalPathMappings = {};
 
-  Object.keys(sources).forEach(function (source) {
+  for (const source of Object.keys(sources)) {
     let key = source;
 
     if (path.isAbsolute(key)) {
       key = path.relative(options.contracts_directory, key);
+      if (key.startsWith('..')) {
+        return callback(
+          new Error(
+            `Source "${source}" is outside the contracts directory. ` +
+              `Move it inside the contracts directory or publish it as an npm package.`
+          )
+        );
+      }
     }
 
     key = key.replace(/\\/g, '/');
 
     operatingSystemIndependentSources[key] = sources[source];
     originalPathMappings[key] = source;
-  });
+  }
 
   const settings = Object.keys(options.solc).length ? options.solc : options.compilers?.solc?.settings || {};
 
@@ -158,7 +169,6 @@ const compile = function (sources, options, callback) {
         source: operatingSystemIndependentSources[source_path],
         sourceMap: contract.evm.bytecode.sourceMap,
         deployedSourceMap: contract.evm.deployedBytecode.sourceMap,
-        ast: standardOutput.sources[source_path].ast,
         abi: contract.abi,
         bytecode: '0x' + contract.evm.bytecode.object,
         deployedBytecode: '0x' + contract.evm.deployedBytecode.object,
@@ -168,10 +178,6 @@ const compile = function (sources, options, callback) {
           version: solc.version()
         }
       };
-
-      // Reorder ABI so functions are listed in the order they appear
-      // in the source file. Solidity tests need to execute in their expected sequence.
-      contract_definition.abi = orderABI(contract_definition);
 
       // Go through the link references and replace them with older-style
       // identifiers. We'll do this until we're ready to making a breaking
@@ -234,48 +240,6 @@ function replaceLinkReferences(bytecode, linkReferences, libraryName) {
   });
 
   return bytecode;
-}
-
-function orderABI(contract) {
-  const { abi, contractName, ast } = contract;
-
-  if (!abi) {
-    return []; //Yul doesn't return ABIs, but we require something
-  }
-
-  if (!ast || !ast.nodes) {
-    return abi;
-  }
-
-  // AST can have multiple contract definitions, make sure we have the
-  // one that matches our contract
-  const contractDefinition = ast.nodes.find(
-    ({ nodeType, name }) => nodeType === 'ContractDefinition' && name === contractName
-  );
-
-  if (!contractDefinition || !contractDefinition.nodes) {
-    return abi;
-  }
-
-  // Find all function definitions
-  const orderedFunctionNames = contractDefinition.nodes
-    .filter(({ nodeType }) => nodeType === 'FunctionDefinition')
-    .map(({ name: functionName }) => functionName);
-
-  // Put function names in a hash with their order, lowest first, for speed.
-  const functionIndexes = orderedFunctionNames
-    .map((functionName, index) => ({ [functionName]: index }))
-    .reduce((a, b) => Object.assign({}, a, b), {});
-
-  // Construct new ABI with functions at the end in source order
-  return [
-    ...abi.filter(({ name }) => functionIndexes[name] === undefined),
-
-    // followed by the functions in the source order
-    ...abi
-      .filter(({ name }) => functionIndexes[name] !== undefined)
-      .sort(({ name: a }, { name: b }) => functionIndexes[a] - functionIndexes[b])
-  ];
 }
 
 // contracts_directory: String. Directory where .sol files can be found.

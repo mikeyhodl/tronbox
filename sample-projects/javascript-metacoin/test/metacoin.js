@@ -1,9 +1,14 @@
-const wait = require('./helpers/wait');
 const pc = require('picocolors');
-const MetaCoin = artifacts.require('./MetaCoin.sol');
+const MetaCoin = artifacts.require('MetaCoin.sol');
 
 // The following tests require TronBox >= 4.1.x
 // and TronBox Runtime Environment (https://hub.docker.com/r/tronbox/tre)
+
+const sleep = async secs => {
+  process.stdout.write(pc.yellow(`Sleeping for ${secs} second${secs === 1 ? '' : 's'}...`));
+  await new Promise(resolve => setTimeout(resolve, secs * 1000));
+  process.stdout.write(pc.yellow(' Slept.\n'));
+};
 
 contract('MetaCoin', function (accounts) {
   let metaCoinInstance;
@@ -74,7 +79,7 @@ contract('MetaCoin', function (accounts) {
 
   it('should allow owner to withdraw TRX after unlock time', async function () {
     assert.isTrue(accounts[1] ? true : false, 'accounts[1] does not exist. Use TronBox Runtime Environment!');
-    await wait(10);
+    await sleep(10);
 
     const initialReceiverBalance = await tronWeb.trx.getBalance(accounts[1]);
     const contractBalance = await tronWeb.trx.getBalance(metaCoinInstance.address);

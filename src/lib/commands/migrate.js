@@ -68,10 +68,6 @@ Usage: $0 ${cmd} [--network <network>]
 
     const config = Config.detect(options);
 
-    // if "development" exists, default to using that
-    if (!config.network && config.networks.development) {
-      config.network = 'development';
-    }
     // init TronWeb
     try {
       TronWrap(config.networks[config.network], {

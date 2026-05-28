@@ -1,13 +1,12 @@
 const dir = require('node-dir');
 const path = require('path');
-const ResolverIntercept = require('./resolverintercept');
+const ResolverIntercept = require('../Resolver/intercept');
 const Require = require('../Require');
 const async = require('async');
 const { expect } = require('../../lib/utils');
 const Deployer = require('../Deployer');
 
 const TronWrap = require('../TronWrap');
-const logErrorAndExit = require('../TronWrap').logErrorAndExit;
 const waitForTransactionReceipt = require('../waitForTransactionReceipt');
 let tronWrap;
 
@@ -44,7 +43,6 @@ Migration.prototype.run = function (options, callback) {
     },
     network: options.network,
     network_id: options.network_id,
-    provider: options.provider,
     basePath: path.dirname(this.file)
   });
 
@@ -83,24 +81,34 @@ Migration.prototype.run = function (options, callback) {
         return options.artifactor.saveAll(resolver.contracts());
       })
       .then(function () {
-        // Use process.nextTicK() to prevent errors thrown in the callback from triggering the below catch()
+        // Use process.nextTick() to prevent errors thrown in the callback from triggering the below catch()
         process.nextTick(callback);
       })
       .catch(function (e) {
-        logErrorAndExit(logger, e);
+        callback(e);
       });
   };
-  const fn = Require.file({
-    file: self.file,
-    context: context,
-    resolver: resolver,
-    args: [deployer]
-  });
+  let fn;
+  try {
+    fn = Require.file({
+      file: self.file,
+      context: context,
+      resolver: resolver,
+      args: [deployer]
+    });
+  } catch (err) {
+    return callback(err);
+  }
 
   if (!fn || !fn.length || fn.length === 0) {
     return callback(new Error('Migration ' + self.file + ' invalid or does not take any parameters'));
   }
-  const migrateFn = fn(deployer, options.network, options.networks[options.network].from);
+  let migrateFn;
+  try {
+    migrateFn = fn(deployer, options.network, options.networks[options.network].from);
+  } catch (err) {
+    return callback(err);
+  }
   finish(null, migrateFn);
 };
 
@@ -145,7 +153,6 @@ const Migrate = {
       'working_directory',
       'migrations_directory',
       'contracts_build_directory',
-      'provider',
       'artifactor',
       'resolver',
       'network',
@@ -195,70 +202,16 @@ const Migrate = {
   },
 
   runMigrations: function (migrations, options, callback) {
-    // Perform a shallow clone of the options object
-    // so that we can override the provider option without
-    // changing the original options object passed in.
-    const clone = {};
-
-    Object.keys(options).forEach(function (key) {
-      clone[key] = options[key];
-    });
-
-    clone.provider = this.wrapProvider(options.provider, clone.logger);
-    clone.resolver = this.wrapResolver(options.resolver, clone.provider);
-
     async.eachSeries(
       migrations,
       function (migration, finished) {
-        migration.run(clone, function (err) {
+        migration.run(options, function (err) {
           if (err) return finished(err);
           finished();
         });
       },
       callback
     );
-  },
-
-  wrapProvider: function (provider, logger) {
-    const printTransaction = function (tx_hash) {
-      logger.log('  ... ' + tx_hash);
-    };
-
-    return {
-      send: function (payload) {
-        const result = provider.send(payload);
-
-        if (payload.method === 'eth_sendTransaction') {
-          printTransaction(result.result);
-        }
-
-        return result;
-      },
-      sendAsync: function (payload, callback) {
-        provider.sendAsync(payload, function (err, result) {
-          if (err) return callback(err);
-
-          if (payload.method === 'eth_sendTransaction') {
-            printTransaction(result.result);
-          }
-
-          callback(err, result);
-        });
-      }
-    };
-  },
-
-  wrapResolver: function (resolver, provider) {
-    return {
-      require: function (import_path, search_path) {
-        const abstraction = resolver.require(import_path, search_path);
-
-        abstraction.setProvider(provider);
-
-        return abstraction;
-      },
-      resolve: resolver.resolve
-    };
   },
 
   lastCompletedMigration: function (options, callback) {

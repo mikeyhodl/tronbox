@@ -7,28 +7,6 @@ const compile = require('./Compile');
 const { expect } = require('../lib/utils');
 const Resolver = require('./Resolver');
 const Artifactor = require('./Artifactor');
-const TronWrap = require('./TronWrap');
-
-async function getCompilerVersion(options) {
-  const config = Config.detect(options);
-
-  // if "development" exists, default to using that
-  if (!config.network && config.networks.development) {
-    config.network = 'development';
-  }
-  let tronWrap;
-  try {
-    tronWrap = TronWrap(config.networks[config.network], {
-      evm: options.evm,
-      verify: true,
-      logger: options.logger
-    });
-    const networkInfo = await tronWrap._getNetworkInfo();
-    return Promise.resolve(networkInfo || {});
-  } catch (err) {
-    return Promise.resolve({});
-  }
-}
 
 const Contracts = {
   // contracts_directory: String. Directory where .sol files can be found.
@@ -86,12 +64,7 @@ const Contracts = {
       }
     }
 
-    getCompilerVersion(options)
-      .then(networkInfo => {
-        config.networkInfo = networkInfo;
-        start();
-      })
-      .catch(start);
+    start();
   },
 
   write_contracts: function (contracts, options, buildInfo, callback) {

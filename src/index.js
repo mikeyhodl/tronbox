@@ -20,7 +20,7 @@ if (commands[0] === '--download-compiler' && commands[1]) {
       if (typeof err === 'number') {
         // If a number is returned, exit with that number.
         process.exit(err);
-      } else if (err instanceof Error) {
+      } else if (err && typeof err.message === 'string') {
         console.error(chalk.red(chalk.bold('ERROR:'), err.message));
       } else {
         // Handle other types (string, object, etc.)
@@ -29,16 +29,6 @@ if (commands[0] === '--download-compiler' && commands[1]) {
       process.exit(1);
     }
 
-    // Don't exit if no error; if something is keeping the process open,
-    // like `tronbox console`, then let it.
-
-    // Clear any polling or open sockets - legacy provider engines and
-    // confirmation trackers often leave interval timers wide open.
-    const handles = process._getActiveHandles();
-    handles.forEach(handle => {
-      if (typeof handle.close === 'function') {
-        handle.close();
-      }
-    });
+    process.exit(0);
   });
 }

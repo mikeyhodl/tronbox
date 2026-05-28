@@ -1,4 +1,4 @@
-const TaskError = require('./errors/taskerror');
+const TronBoxError = require('./errors/tronBoxError');
 const yargs = require('yargs/yargs');
 const _ = require('lodash');
 const version = require('./version');
@@ -80,7 +80,7 @@ Command.prototype.run = function (command, options, callback) {
 
   if (!result) {
     return callback(
-      new TaskError(
+      new TronBoxError(
         `\`tronbox ${command[0]}\` is an invalid command.
 
 Please use \`tronbox help\` to see a list of available commands.

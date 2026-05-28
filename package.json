@@ -1,7 +1,7 @@
 {
   "name": "tronbox",
   "namespace": "tronprotocol",
-  "version": "4.7.1",
+  "version": "4.8.0",
   "description": "TronBox - Simple development framework for Tron",
   "keywords": [
     "TronBox",
@@ -12,10 +12,13 @@
   ],
   "scripts": {
     "build": "scripts/build.sh",
-    "test": "npm run build && cd test && sh runTest.sh",
+    "pretest": "npm install --prefix test/fixture --no-progress --silent",
+    "test": "[ -f test/.env ] && . test/.env; mocha 'test/*.test.js' --ignore 'test/*.testnet.test.js'",
+    "test:testnet": "[ -f test/.env ] && . test/.env; mocha 'test/*.testnet.test.js'",
+    "test:all": "npm test && npm run test:testnet",
     "prepare": "npm run build",
-    "lint": "eslint \"src/**/*.js\" \"test/**/*.js\"",
-    "format": "prettier --write \"src/**/*.js\" \"test/**/*.js\""
+    "lint": "eslint \"sample-projects/**/*.js\" \"src/**/*.js\" \"test/**/*.js\"",
+    "format": "prettier --write \"sample-projects/**/*.js\" \"src/**/*.js\" \"test/**/*.js\""
   },
   "dependencies": {
     "@solidity-parser/parser": "0.20.2",
@@ -25,7 +28,6 @@
     "bignumber.js": "7.2.1",
     "chai": "4.1.2",
     "chalk": "2.4.2",
-    "colors": "1.4.0",
     "debug": "3.2.7",
     "enquirer": "2.4.1",
     "ethers": "6.15.0",
@@ -38,12 +40,9 @@
     "mkdirp": "0.5.6",
     "mocha": "11.7.4",
     "node-dir": "0.1.17",
-    "original-require": "1.0.1",
-    "solc": "0.8.34",
     "source-map-support": "0.5.21",
-    "tmp": "0.0.33",
+    "tmp": "0.2.6",
     "tronweb": "6.3.0",
-    "vcsurl": "0.1.1",
     "yargs": "15.4.1",
     "yauzl": "3.2.1"
   },

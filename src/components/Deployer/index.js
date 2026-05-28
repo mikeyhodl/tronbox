@@ -10,7 +10,7 @@ function Deployer(options) {
   const self = this;
   options = options || {};
 
-  expect.options(options, ['provider', 'network', 'network_id']);
+  expect.options(options, ['network', 'network_id']);
 
   this.chain = new DeferredChain();
   this.logger = options.logger || {
@@ -22,7 +22,6 @@ function Deployer(options) {
   });
   this.network = options.network;
   this.network_id = options.network_id;
-  this.provider = options.provider;
   this.basePath = options.basePath || process.cwd();
   this.options = options;
 }
