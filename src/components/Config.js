@@ -1,11 +1,9 @@
 const _ = require('lodash');
 const path = require('path');
 const { constants } = require('./TronWrap');
-const Provider = require('./Provider');
-const TronBoxError = require('../lib/errors/tronboxerror');
+const TronBoxError = require('../lib/errors/tronBoxError');
 const Module = require('module');
 const findUp = require('find-up');
-const originalrequire = require('original-require');
 
 const DEFAULT_CONFIG_FILENAME = 'tronbox.js';
 const BACKUP_CONFIG_FILENAME = 'tronbox-config.js'; // For Windows + Command Prompt
@@ -35,7 +33,6 @@ function Config() {
     working_directory: process.cwd(),
     network: 'development',
     networks: {},
-    verboseRpc: false,
     privateKey: null,
     fullHost: null,
     fullNode: null,
@@ -48,7 +45,6 @@ function Config() {
     tokenId: null,
     callValue: null,
     from: null,
-    build: null,
     resolver: null,
     artifactor: null,
     solc: {},
@@ -62,8 +58,6 @@ function Config() {
     working_directory: function () {},
     network: function () {},
     networks: function () {},
-    verboseRpc: function () {},
-    build: function () {},
     resolver: function () {},
     artifactor: function () {},
     solc: function () {},
@@ -298,22 +292,6 @@ function Config() {
         );
       }
     },
-    provider: {
-      get: function () {
-        if (!self.network) {
-          return null;
-        }
-
-        const options = self.network_config;
-        options.verboseRpc = self.verboseRpc;
-        return Provider.create(options);
-      },
-      set: function () {
-        throw new Error(
-          "Don't set config.provider directly. Instead, set config.networks and then set config.networks[<network name>].provider"
-        );
-      }
-    },
     callValue: {
       get: function () {
         try {
@@ -434,7 +412,7 @@ Config.load = function (file, options) {
   // The require-nocache module used to do this for us, but
   // it doesn't bundle very well. So we've pulled it out ourselves.
   delete require.cache[Module._resolveFilename(file, module)];
-  const static_config = originalrequire(file);
+  const static_config = require(file);
 
   // Remove any `_allowExternalContractsBuildDirectory` property from the loaded config file.
   delete static_config._allowExternalContractsBuildDirectory;

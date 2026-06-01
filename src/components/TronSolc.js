@@ -4,8 +4,7 @@ const path = require('path');
 const chalk = require('chalk');
 const fs = require('fs-extra');
 const homedir = require('homedir');
-const wrapper = require('solc/wrapper');
-let { name, version } = require('../../package');
+const pkg = require('../../package');
 
 const maxVersion = '0.8.26';
 
@@ -28,6 +27,38 @@ function compareVersions(version1, version2) {
 
 function isValidCompilerVersion(version) {
   return /^\d+\.\d+\.\d+$/.test(version);
+}
+
+// Adapted from solc-js (https://github.com/ethereum/solc-js): the bare minimum
+// wrapping needed to drive a soljson module through Standard JSON I/O.
+function wrapSoljson(solc) {
+  const version = solc._solidity_version
+    ? solc.cwrap('solidity_version', 'string', [])
+    : solc.cwrap('version', 'string', []);
+  const reset = solc._solidity_reset ? solc.cwrap('solidity_reset', null, []) : undefined;
+  const isVersion6OrNewer = compareVersions(version(), '0.6.0') >= 0;
+
+  let compile;
+  if (isVersion6OrNewer && solc._solidity_compile) {
+    compile = solc.cwrap('solidity_compile', 'string', ['string', 'number', 'number']);
+  } else if (solc._solidity_compile) {
+    compile = solc.cwrap('solidity_compile', 'string', ['string', 'number']);
+  } else if (solc._compileStandard) {
+    compile = solc.cwrap('compileStandard', 'string', ['string', 'number']);
+  } else {
+    throw new Error(`Invalid soljson compiler: missing compile entry point (version ${version()})`);
+  }
+
+  return {
+    version,
+    compile: input => {
+      const output = isVersion6OrNewer ? compile(input, null, null) : compile(input, null);
+      // cwrap's "compile" copies the returned pointer into a JS string and
+      // there is no free() for it; reset() clears all allocations.
+      if (reset) reset();
+      return output;
+    }
+  };
 }
 
 function getWrapper(options = {}) {
@@ -54,9 +85,9 @@ function getWrapper(options = {}) {
     }
 
     if (compareVersions(compilerVersion, maxVersion) > 0 && !options.evm) {
-      console.error(`${chalk.red(
-        chalk.bold('ERROR:')
-      )} TronBox v${version} currently supports Tron Solidity compiler versions up to ${chalk.green(maxVersion)}.
+      console.error(`${chalk.red(chalk.bold('ERROR:'))} TronBox v${
+        pkg.version
+      } currently supports Tron Solidity compiler versions up to ${chalk.green(maxVersion)}.
 You are using version ${chalk.yellow(compilerVersion)}, which is not supported.`);
       process.exit(1);
     }
@@ -65,9 +96,7 @@ You are using version ${chalk.yellow(compilerVersion)}, which is not supported.`
   const soljsonPath = path.join(solcDir, `soljson_v${compilerVersion}.js`);
 
   if (!fs.existsSync(soljsonPath)) {
-    if (process.argv[1]) {
-      name = process.argv[1];
-    }
+    const cliPath = process.argv[1] || pkg.name;
 
     options.logger.log(`Fetching ${options.evm ? 'Ethereum' : 'Tron'} Solidity compiler version ${compilerVersion}...`);
     try {
@@ -76,7 +105,7 @@ You are using version ${chalk.yellow(compilerVersion)}, which is not supported.`
         args.push('--evm');
       }
 
-      const result = execFileSync(name, args, {
+      const result = execFileSync(cliPath, args, {
         env: { ...process.env, FORCE_COLOR: '1' },
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'pipe']
@@ -92,7 +121,7 @@ You are using version ${chalk.yellow(compilerVersion)}, which is not supported.`
 
   const runtimeRequire = createRequire(__filename);
   const soljson = runtimeRequire(soljsonPath);
-  return wrapper(soljson);
+  return wrapSoljson(soljson);
 }
 
 module.exports.getWrapper = getWrapper;

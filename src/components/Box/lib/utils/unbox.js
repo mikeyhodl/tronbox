@@ -1,11 +1,9 @@
 const fs = require('fs-extra');
 const path = require('path');
 const axios = require('axios');
-const vcsurl = require('vcsurl');
 const tmp = require('tmp');
 const { spawnSync } = require('child_process');
 const ghdownload = require('./download');
-const cwd = process.cwd();
 
 const config = require('../config');
 
@@ -27,11 +25,11 @@ function verifyURL(url) {
   // Next let's see if the expected repository exists. If it doesn't, ghdownload
   // will fail spectacularly in a way we can't catch, so we have to do it ourselves.
   return new Promise(function (accept, reject) {
-    const configURL = new URL(
-      vcsurl(url).replace('github.com', 'raw.githubusercontent.com').replace(/#.*/, '') + '/master/tronbox.js'
-    );
-
-    const targetUrl = 'https://' + configURL.host + configURL.pathname;
+    const [repoPart, ref = 'master'] = url.split('#');
+    const parts = repoPart.replace(/\.git$/, '').split(/[:/]/);
+    const user = parts[parts.length - 2];
+    const repo = parts[parts.length - 1];
+    const targetUrl = `https://raw.githubusercontent.com/${user}/${repo}/${ref}/tronbox.js`;
 
     axios
       .head(targetUrl)
@@ -56,7 +54,7 @@ function verifyURL(url) {
 
 function setupTempDirectory() {
   return new Promise(function (accept, reject) {
-    tmp.dir({ dir: cwd, unsafeCleanup: true }, function (err, dir, cleanupCallback) {
+    tmp.dir({ unsafeCleanup: true }, function (err, dir, cleanupCallback) {
       if (err) return reject(err);
 
       accept({ dir: path.join(dir, 'box'), cleanupCallback });
@@ -65,16 +63,7 @@ function setupTempDirectory() {
 }
 
 function fetchRepository(url, dir) {
-  return new Promise(function (accept, reject) {
-    // Download the package from github.
-    ghdownload(url, dir)
-      .on('error', function (err) {
-        reject(err);
-      })
-      .on('end', function () {
-        accept();
-      });
-  });
+  return ghdownload(url, dir);
 }
 
 function copyTempIntoDestination(tmpDir, destination) {

@@ -4,13 +4,10 @@ const path = require('path');
 const Config = require('../components/Config');
 const Contracts = require('../components/WorkflowCompile');
 const Resolver = require('../components/Resolver');
-const TestRunner = require('./testing/testrunner');
-const TestResolver = require('./testing/testresolver');
-const TestSource = require('./testing/testsource');
+const ResolverIntercept = require('../components/Resolver/intercept');
 const { expect } = require('./utils');
 const Migrate = require('../components/Migrate');
 const Profiler = require('../components/Compile/profiler');
-const originalrequire = require('original-require');
 const TronWrap = require('../components/TronWrap');
 const waitForTransactionReceipt = require('../components/waitForTransactionReceipt');
 
@@ -26,8 +23,7 @@ const Test = {
       'migrations_directory',
       'test_files',
       'network',
-      'network_id',
-      'provider'
+      'network_id'
     ]);
 
     const config = Config.default().merge(options);
@@ -60,14 +56,12 @@ const Test = {
       // There's an idiosyncrasy in Mocha where the same file can't be run twice
       // unless we delete the `require` cache.
       // https://github.com/mochajs/mocha/issues/995
-      delete originalrequire.cache[file];
+      delete require.cache[file];
 
       mocha.addFile(file);
     });
 
     let accounts = [];
-    let runner;
-    let test_resolver;
 
     const tronWrap = TronWrap();
 
@@ -80,33 +74,23 @@ const Test = {
           config.from = accounts[0];
         }
 
-        if (!config.resolver) {
-          config.resolver = new Resolver(config);
-        }
+        // Always rebuild the resolver: the test command swaps
+        // `contracts_build_directory` to a tmp dir after Environment.detect, so any
+        // resolver created earlier still points at the stale build dir.
+        config.resolver = new Resolver(config);
 
-        const test_source = new TestSource(config);
-        test_resolver = new TestResolver(config.resolver, test_source, config.contracts_build_directory);
-        test_resolver.cache_on = false;
-
-        return self.compileContractsWithTestFilesIfNeeded(sol_tests, config, test_resolver);
+        return self.compileContractsWithTestFilesIfNeeded(sol_tests, config);
       })
       .then(function () {
-        runner = new TestRunner(config);
-
         console.info();
         console.info('Deploying contracts to development network...');
-        return self.performInitialDeploy(config, test_resolver);
+        return self.performInitialDeploy(config);
       })
       .then(function () {
         console.info('Preparing JavaScript tests (if any)...');
-        return self.setJSTestGlobals(accounts, test_resolver, runner);
+        return self.setJSTestGlobals(accounts, config.resolver);
       })
       .then(function () {
-        // Finally, run mocha.
-        process.on('unhandledRejection', function (reason) {
-          throw reason;
-        });
-
         mocha.run(function (failures) {
           config.logger.warn = warn;
           callback(failures);
@@ -138,42 +122,35 @@ const Test = {
     return mocha;
   },
 
-  compileContractsWithTestFilesIfNeeded: function (solidity_test_files, config, test_resolver) {
+  compileContractsWithTestFilesIfNeeded: function (solidity_test_files, config) {
     return new Promise(function (accept, reject) {
-      Profiler.updated(
-        config.with({
-          resolver: test_resolver
-        }),
-        function (err, updated) {
-          if (err) return reject(err);
+      Profiler.updated(config, function (err, updated) {
+        if (err) return reject(err);
 
-          updated = updated || [];
+        updated = updated || [];
 
-          // Compile project contracts and test contracts
-          Contracts.compile(
-            config.with({
-              all: config.compileAll === true,
-              files: updated.concat(solidity_test_files),
-              resolver: test_resolver,
-              quiet: false,
-              quietWrite: true
-            }),
-            function (err, abstractions, paths) {
-              if (err) return reject(err);
-              accept(paths);
-            }
-          );
-        }
-      );
+        // Compile project contracts and test contracts
+        Contracts.compile(
+          config.with({
+            all: config.compileAll === true,
+            files: updated.concat(solidity_test_files),
+            quiet: false,
+            quietWrite: true
+          }),
+          function (err, abstractions, paths) {
+            if (err) return reject(err);
+            accept(paths);
+          }
+        );
+      });
     });
   },
 
-  performInitialDeploy: function (config, resolver) {
+  performInitialDeploy: function (config) {
     return new Promise(function (accept, reject) {
       Migrate.run(
         config.with({
           reset: true,
-          resolver: resolver,
           quiet: true,
           logger: {
             log: function () {}
@@ -187,31 +164,14 @@ const Test = {
     });
   },
 
-  setJSTestGlobals: function (accounts, test_resolver, runner) {
+  setJSTestGlobals: function (accounts, resolver) {
     return new Promise(function (accept) {
       global.assert = chai.assert;
       global.expect = chai.expect;
-      global.artifacts = {
-        require: function (import_path) {
-          return test_resolver.require(import_path);
-        }
-      };
+      global.artifacts = new ResolverIntercept(resolver);
 
       const template = function (tests) {
-        this.timeout(runner.TEST_TIMEOUT);
-
-        before('prepare suite', function (done) {
-          this.timeout(runner.BEFORE_TIMEOUT);
-          runner.initialize(done);
-        });
-
-        beforeEach('before test', function (done) {
-          runner.startTest(this, done);
-        });
-
-        afterEach('after test', function (done) {
-          runner.endTest(this, done);
-        });
+        this.timeout(300000);
 
         tests(accounts);
       };

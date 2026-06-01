@@ -1,3 +1,30 @@
+**4.8.0**
+
+### Bug Fixes
+
+- Fixed `migrate` exiting the process or silently continuing on errors thrown by migration scripts, contract calls, or `deployer` steps
+- Fixed `flatten` truncating its output when stdout is piped
+- Fixed `waitForTransactionReceipt` polling indefinitely when a transaction never appears
+
+### Improvements
+
+- Faster artifact lookup in the resolver
+- Clearer error messages for invalid imports, missing npm packages, and missing files within an npm package
+- `unbox` looks up the template at the requested Git ref (e.g., `user/repo#v1.2.3`)
+- Dropped `ast` from per-contract artifacts to shrink build output; the full AST is still emitted to `build_info_directory`
+- `compile` no longer supports contract files outside `contracts_directory`
+
+### Dependencies
+
+- Upgraded `tmp` from 0.0.33 to 0.2.6
+
+### Removals
+
+- Removed `colors` dependency (chalk was already in use for the same purpose)
+- Removed `original-require` dependency (migration sandbox now uses Node's built-in module loader)
+- Removed `solc` dependency (soljson wrapper vendored in-tree)
+- Removed `vcsurl` dependency (GitHub URL parsing now inline)
+
 **4.7.1**
 
 ### Dependencies

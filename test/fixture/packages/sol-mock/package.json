@@ -1,0 +1,7 @@
+{
+  "name": "sol-mock",
+  "version": "1.0.0",
+  "description": "Local fixture package for testing unscoped npm import resolution.",
+  "private": true,
+  "license": "MIT"
+}

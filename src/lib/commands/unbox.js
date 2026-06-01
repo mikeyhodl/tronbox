@@ -113,7 +113,7 @@ Usage: $0 unbox [<name>] [--quiet]`
         });
 
         if (boxConfig.epilogue) {
-          config.logger.log(boxConfig.epilogue.replace('\n', OS.EOL));
+          config.logger.log(boxConfig.epilogue.replace(/\n/g, OS.EOL));
         }
 
         done();

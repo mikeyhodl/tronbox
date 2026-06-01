@@ -30,16 +30,16 @@ module.exports = {
   },
   compilers: {
     solc: {
-      version: '0.8.7',
+      version: '0.8.26',
       // An object with the same schema as the settings entry in the Input JSON.
       // See https://docs.soliditylang.org/en/latest/using-the-compiler.html#input-description
       settings: {
-        // optimizer: {
-        //   enabled: true,
-        //   runs: 200
-        // },
-        // evmVersion: 'istanbul',
-        // viaIR: true,
+        optimizer: {
+          enabled: true,
+          runs: 200
+        },
+        evmVersion: 'paris',
+        viaIR: true
       }
     }
   }
