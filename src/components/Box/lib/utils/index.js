@@ -1,9 +1,9 @@
+const fs = require('fs-extra');
 const unbox = require('./unbox');
 
 module.exports = {
   downloadBox: function (url, destination) {
     let tmpDir;
-    let tmpCleanup;
 
     return Promise.resolve()
       .then(function () {
@@ -13,12 +13,7 @@ module.exports = {
         return unbox.verifyURL(url);
       })
       .then(function () {
-        return unbox.setupTempDirectory();
-      })
-      .then(function ({ dir, cleanupCallback }) {
-        // save tmpDir result
-        tmpDir = dir;
-        tmpCleanup = cleanupCallback;
+        tmpDir = unbox.setupTempDirectory();
       })
       .then(function () {
         return unbox.fetchRepository(url, tmpDir);
@@ -26,10 +21,12 @@ module.exports = {
       .then(function () {
         return unbox.copyTempIntoDestination(tmpDir, destination);
       })
-      .then(tmpCleanup)
-      .catch(error => {
-        if (tmpCleanup) tmpCleanup();
-        throw error;
+      .finally(function () {
+        if (tmpDir) {
+          try {
+            fs.removeSync(tmpDir);
+          } catch (e) {}
+        }
       });
   },
 

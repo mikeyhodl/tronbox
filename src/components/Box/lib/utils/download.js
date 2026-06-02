@@ -1,10 +1,8 @@
 const axios = require('axios');
+const os = require('os');
 const path = require('path');
 const fs = require('fs-extra');
-const crypto = require('crypto');
 const yauzl = require('yauzl');
-
-const cwd = process.cwd();
 
 function parseParams(params) {
   if (typeof params === 'string') {
@@ -16,10 +14,6 @@ function parseParams(params) {
     return params;
   }
   throw new Error('Invalid parameter type. Should be repo URL string or object containing repo and user.');
-}
-
-function generateTempDir() {
-  return path.join(cwd, Date.now().toString() + '-' + crypto.randomBytes(16).toString('hex'));
 }
 
 function streamToFile(stream, file) {
@@ -104,11 +98,10 @@ module.exports = async function downloadRepo(params, dir) {
   const targetRef = ref || 'master';
   const targetDir = dir || process.cwd();
 
-  const tmpDir = generateTempDir();
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tronbox-download-'));
   const zipFile = path.join(tmpDir, `${repo}-${targetRef}.zip`);
   const zipUrl = `https://github.com/${user}/${repo}/archive/${targetRef}.zip`;
 
-  await fs.mkdir(tmpDir);
   try {
     const response = await axios.get(zipUrl, { responseType: 'stream' });
     await streamToFile(response.data, zipFile);
