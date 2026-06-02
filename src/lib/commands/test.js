@@ -72,7 +72,7 @@ Usage: $0 test [<files...>] [--file <file>]
     if (options.file) {
       files = [options.file];
     } else if (options._.length > 0) {
-      Array.prototype.push.apply(files, options._);
+      Array.prototype.push.apply(files, options._.map(String));
     }
 
     function getFiles(callback) {
@@ -83,6 +83,11 @@ Usage: $0 test [<files...>] [--file <file>]
           const relative = path.relative(workingDirectoryPath, resolvedPath);
           if (relative.startsWith('..') || path.isAbsolute(relative)) {
             return callback(new Error(`${file} is outside the project directory.`));
+          }
+          if (!file.match(config.test_file_extension_regexp)) {
+            return callback(
+              new Error(`${file} is not a JavaScript test file. tronbox runs tests written in JavaScript.`)
+            );
           }
         }
         return callback(null, files);
