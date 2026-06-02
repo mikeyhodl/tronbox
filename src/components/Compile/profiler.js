@@ -286,7 +286,12 @@ module.exports = {
           // Add the contract to the depends graph.
           dependsGraph.setNode(resolved_path, resolved_body);
 
-          let imports = Parser.parseImports(resolved_body, resolver.options);
+          let imports;
+          try {
+            imports = Parser.parseImports(resolved_body, resolver.options);
+          } catch (e) {
+            return finished(e);
+          }
 
           // Reject user-written absolute imports before any path normalization
           // turns explicitly-relative imports into absolute paths internally.
