@@ -6,6 +6,7 @@ const path = require('path');
 const REPO_ROOT = path.resolve(__dirname, '..');
 const TRONBOX_BIN = path.join(REPO_ROOT, 'tronbox.dev');
 const FIXTURE_DIR = path.join(__dirname, 'fixture');
+const LOCAL_TMP_ROOT = path.join(__dirname, '.temp');
 
 const artifact = (buildDir, name) => path.join(buildDir, 'contracts', `${name}.json`);
 
@@ -73,8 +74,23 @@ function makeTmp(prefix = 'tronbox-test-') {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
 }
 
-function removeTmp(dir) {
-  if (dir && dir.startsWith(os.tmpdir())) fs.removeSync(dir);
+function makeLocalTmp(prefix = 'tronbox-test-') {
+  fs.ensureDirSync(LOCAL_TMP_ROOT);
+  return fs.mkdtempSync(path.join(LOCAL_TMP_ROOT, prefix));
 }
 
-module.exports = { runCli, runCliRepl, makeTmp, removeTmp, artifact, REPO_ROOT, TRONBOX_BIN, FIXTURE_DIR };
+function removeTmp(dir) {
+  if (dir && (dir.startsWith(os.tmpdir()) || dir.startsWith(LOCAL_TMP_ROOT))) fs.removeSync(dir);
+}
+
+module.exports = {
+  runCli,
+  runCliRepl,
+  makeTmp,
+  makeLocalTmp,
+  removeTmp,
+  artifact,
+  REPO_ROOT,
+  TRONBOX_BIN,
+  FIXTURE_DIR
+};
