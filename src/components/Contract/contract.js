@@ -178,10 +178,13 @@ Contract._static_methods = {
           reject(err);
           return;
         }
-        self.at(res.address).then(newContract => {
-          newContract.transactionHash = res.transactionHash;
-          accept(newContract);
-        });
+        self
+          .at(res.address)
+          .then(newContract => {
+            newContract.transactionHash = res.transactionHash;
+            accept(newContract);
+          })
+          .catch(reject);
       }
     });
   },
