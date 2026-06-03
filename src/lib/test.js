@@ -11,8 +11,6 @@ const Profiler = require('../components/Compile/profiler');
 const TronWrap = require('../components/TronWrap');
 const waitForTransactionReceipt = require('../components/waitForTransactionReceipt');
 
-chai.use(require('./assertions'));
-
 const Test = {
   run: function (options, callback) {
     const self = this;
