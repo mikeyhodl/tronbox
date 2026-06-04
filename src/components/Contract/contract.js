@@ -579,7 +579,7 @@ Contract._properties = {
     get: function () {
       const transactionHash = this.network.transactionHash;
 
-      if (transactionHash === null) {
+      if (!transactionHash) {
         throw new Error('Could not find transaction hash for ' + this.contractName);
       }
 
