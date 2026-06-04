@@ -128,7 +128,7 @@ const compile = function (sources, options, callback) {
           .map(function (warning) {
             return warning.formattedMessage;
           })
-          .join()
+          .join('')
       );
     }
   }
@@ -137,11 +137,11 @@ const compile = function (sources, options, callback) {
     options.logger.log('');
     return callback(
       new CompileError(
-        standardOutput.errors
+        errors
           .map(function (error) {
             return error.formattedMessage;
           })
-          .join()
+          .join('')
       )
     );
   }
