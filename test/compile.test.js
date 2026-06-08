@@ -134,6 +134,15 @@ describe('tronbox compile', function () {
       });
     });
 
+    it('CONTRACTS_DIR=contracts_tron compiles Tron Solidity syntax', () => {
+      fs.removeSync(buildDir);
+      const r = runCli(['compile', '--all'], { cwd, env: { CONTRACTS_DIR: 'contracts_tron' } });
+      expect(r.status, r.stderr).to.equal(0);
+      ['Freeze', 'Shielded', 'StakeV2', 'Trc10', 'TvmBuiltins', 'Vote'].forEach(name => {
+        expect(fs.existsSync(artifact(buildDir, name)), name).to.equal(true);
+      });
+    });
+
     it('CONTRACTS_DIR=contracts_syntax_error reports a ParserError', () => {
       const r = runCli(['compile', '--all'], { cwd, env: { CONTRACTS_DIR: 'contracts_syntax_error' } });
       expect(r.status).to.not.equal(0);
