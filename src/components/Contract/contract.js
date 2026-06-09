@@ -1,24 +1,10 @@
 const { ethers } = require('ethers');
 const TronWrap = require('../TronWrap');
 const { constants } = require('../TronWrap');
-const BigNumber = require('bignumber.js');
 
 let tronWrap;
 
 const Utils = {
-  is_object: function (val) {
-    return typeof val === 'object' && !Array.isArray(val);
-  },
-  is_big_number: function (val) {
-    if (typeof val !== 'object') return false;
-
-    try {
-      new BigNumber(val);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  },
   merge: function () {
     const merged = {};
     const args = Array.prototype.slice.call(arguments);
