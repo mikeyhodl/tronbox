@@ -13,10 +13,10 @@ module.exports = {
     let hasAddress = false;
 
     // Abstractions; don't want to use .address directly because it will throw.
-    if (typeof library.isDeployed) {
+    if (typeof library.isDeployed === 'function') {
       hasAddress = library.isDeployed();
     } else {
-      hasAddress = library.address;
+      hasAddress = library.address != null;
     }
 
     if (!hasAddress) {
