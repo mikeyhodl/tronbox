@@ -57,14 +57,13 @@ Migration.prototype.run = function (options, callback) {
 
         if (options.save === false) return;
 
+        let Migrations;
         try {
-          resolver.require('Migrations');
+          Migrations = resolver.require('Migrations');
         } catch (error) {
           // don't throw, Migrations contract optional
           return;
         }
-
-        const Migrations = resolver.require('Migrations');
 
         if (Migrations && Migrations.isDeployed()) {
           logger.log('Saving successful migration to network...');
@@ -221,14 +220,13 @@ const Migrate = {
       tronWrap = TronWrap();
     }
 
+    let Migrations;
     try {
-      options.resolver.require('Migrations');
+      Migrations = options.resolver.require('Migrations');
     } catch (error) {
       // don't throw, Migrations contract optional
       return callback(null, 0);
     }
-
-    const Migrations = options.resolver.require('Migrations');
 
     if (Migrations.isDeployed() === false) {
       return callback(null, 0);
