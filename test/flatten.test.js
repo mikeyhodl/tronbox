@@ -49,16 +49,17 @@ describe('tronbox flatten', function () {
       expect(headers).to.have.lengthOf(1);
       expect(r.stdout).to.include('// Original license: SPDX_License_Identifier: MIT');
 
-      // All four resolver paths inlined, dependencies before dependents.
+      // All four resolver paths inlined, each once, dependencies before dependents.
       const idxIERC20 = r.stdout.indexOf('// File npm/@openzeppelin/contracts@5.4.0/token/ERC20/IERC20.sol');
       const idxFoo = r.stdout.indexOf('// File npm/sol-mock@1.0.0/Foo.sol');
       const idxB = r.stdout.indexOf('// File contracts_imports/B.sol');
       const idxMath = r.stdout.indexOf('// File contracts_imports/utils/Math.sol');
       const idxMain = r.stdout.indexOf('// File contracts_imports/Main.sol');
+      const mathSections = r.stdout.match(/^\/\/ File contracts_imports\/utils\/Math\.sol$/gm) || [];
       expect(idxIERC20).to.be.greaterThan(-1);
       expect(idxFoo).to.be.greaterThan(-1);
-      expect(idxB).to.be.greaterThan(-1);
-      expect(idxMath).to.be.greaterThan(-1);
+      expect(mathSections).to.have.lengthOf(1);
+      expect(idxB).to.be.greaterThan(idxMath);
       expect(idxMain).to.be.greaterThan(idxB);
       expect(idxMain).to.be.greaterThan(idxMath);
       expect(idxMain).to.be.greaterThan(idxIERC20);

@@ -9,10 +9,7 @@ const SPDX_LICENSES_REGEX = /^(?:\/\/|\/\*)\s*SPDX-License-Identifier:\s*([a-zA-
 const PRAGMA_DIRECTIVES_REGEX = /^(?: |\t)*(pragma\s*abicoder\s*v(1|2)|pragma\s*experimental\s*ABIEncoderV2)\s*;/gim;
 const IMPORT_SOLIDITY_REGEX = /^\s*import(\s+)[\s\S]*?;\s*$/gm;
 
-async function resolve(importPath) {
-  const config = Config.detect({});
-  const resolver = new Resolver(config);
-
+async function resolve(importPath, resolver, config) {
   try {
     return await new Promise((resolve, reject) => {
       resolver.resolve(importPath, function (err, fileContents, filePath, _source, packageInfo) {
@@ -72,41 +69,41 @@ function compareDependencyPaths(a, b) {
   return a.localeCompare(b);
 }
 
-async function dependenciesDfs(sortedFiles, visitedFiles, processing, filePath) {
-  if (visitedFiles.has(filePath)) return;
-
-  if (processing.has(filePath)) {
-    throw new Error(
-      'There is a cycle in the dependency' + " graph, can't compute topological ordering. Files:\n\t" + filePath
-    );
-  }
-
-  processing.add(filePath);
-
-  const resolved = await resolve(filePath);
-  const dependencies = getDependencies(resolved.filePath, resolved.fileContents).sort(compareDependencyPaths);
-
-  for (const dependency of dependencies) {
-    await dependenciesDfs(sortedFiles, visitedFiles, processing, dependency);
-  }
-
-  processing.delete(filePath);
-  visitedFiles.add(filePath);
-  sortedFiles.push(filePath);
-}
-
-async function getSortedFilePaths(entryPoints) {
+async function getSortedFilePaths(entryPoints, resolver, config) {
   const sortedFiles = [];
   const visitedFiles = new Set();
   const processing = new Set();
+  const resolvedCache = new Map();
 
-  const sortedEntryPoints = [...entryPoints].sort();
+  async function visit(filePath) {
+    if (visitedFiles.has(filePath)) return;
 
-  for (const entryPoint of sortedEntryPoints) {
-    await dependenciesDfs(sortedFiles, visitedFiles, processing, entryPoint);
+    if (processing.has(filePath)) {
+      throw new Error(
+        'There is a cycle in the dependency' + " graph, can't compute topological ordering. Files:\n\t" + filePath
+      );
+    }
+
+    processing.add(filePath);
+
+    const resolved = await resolve(filePath, resolver, config);
+    resolvedCache.set(filePath, resolved);
+    const dependencies = getDependencies(resolved.filePath, resolved.fileContents).sort(compareDependencyPaths);
+
+    for (const dependency of dependencies) {
+      await visit(dependency);
+    }
+
+    processing.delete(filePath);
+    visitedFiles.add(filePath);
+    sortedFiles.push(filePath);
   }
 
-  return sortedFiles;
+  for (const entryPoint of [...entryPoints].sort()) {
+    await visit(entryPoint);
+  }
+
+  return { sortedFiles, resolvedCache };
 }
 
 function fileNameToGlobalName(fileName, projectRoot) {
@@ -238,22 +235,21 @@ function commentOutPragmaAbicoderDirectives(fileContent) {
 const Flatten = {
   run: function (filePaths, callback) {
     const config = Config.detect({});
+    const resolver = new Resolver(config);
     const projectRoot = config.working_directory;
     const absoluteFilePaths = filePaths.map(f => path.resolve(process.cwd(), f));
 
     let res = `// Sources flattened with TronBox v${packageJson.version} ${packageJson.homepage}`;
-    getSortedFilePaths(absoluteFilePaths)
-      .then(async sortedFiles => {
-        const fileContents = await Promise.all(
-          sortedFiles.map(async file => {
-            const resolved = await resolve(file);
-            return {
-              file: fileNameToGlobalName(file, projectRoot),
-              content: resolved.fileContents,
-              packageInfo: resolved.packageInfo
-            };
-          })
-        );
+    getSortedFilePaths(absoluteFilePaths, resolver, config)
+      .then(({ sortedFiles, resolvedCache }) => {
+        const fileContents = sortedFiles.map(file => {
+          const resolved = resolvedCache.get(file);
+          return {
+            file: fileNameToGlobalName(file, projectRoot),
+            content: resolved.fileContents,
+            packageInfo: resolved.packageInfo
+          };
+        });
 
         const { licenses, filesWithoutLicenses } = getLicensesInfo(fileContents);
         const { pragmaDirective, filesWithoutPragmaDirectives, filesWithDifferentPragmaDirectives } =
