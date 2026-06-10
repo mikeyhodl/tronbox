@@ -92,8 +92,7 @@ Migration.prototype.run = function (options, callback) {
     fn = Require.file({
       file: self.file,
       context: context,
-      resolver: resolver,
-      args: [deployer]
+      resolver: resolver
     });
   } catch (err) {
     return callback(err);
