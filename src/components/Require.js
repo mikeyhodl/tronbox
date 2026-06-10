@@ -11,9 +11,9 @@ const Config = require('./Config');
 // options.resolver: Resolver instance exposed to the file as the `artifacts` global.
 const Require = {
   file: options => {
-    const file = path.resolve(options.file);
-
     expect.options(options, ['file']);
+
+    const file = path.resolve(options.file);
 
     options = Config.default().with(options);
 
