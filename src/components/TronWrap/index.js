@@ -274,7 +274,7 @@ function init(options, extraOptions = {}) {
     }
 
     const userFeePercentage =
-      typeof options.userFeePercentage === 'number' ? options.userFeePercentage : this.networkConfig.userFeePercentage;
+      typeof option.userFeePercentage === 'number' ? option.userFeePercentage : this.networkConfig.userFeePercentage;
 
     const constructorAbi = option.abi.find(it => it.type === 'constructor');
     if (constructorAbi && option.parameters && option.parameters.length) {
