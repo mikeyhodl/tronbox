@@ -642,16 +642,16 @@ function init(options, extraOptions = {}) {
       }
       const wallet = ethersWallets[opt.from];
       const contract = new ethers.Contract(option.address, option.abi, wallet);
-      const methodArgs = option.args || [];
+      const callArgs = option.args || [];
       const methodFunc = contract[option.methodName];
 
       if (callSend === 'call') {
-        const callRes = await methodFunc.staticCall(...methodArgs, opt);
+        const callRes = await methodFunc.staticCall(...callArgs, opt);
         return callback(null, callRes);
       }
 
       dlog('Sending transaction');
-      const tx = await methodFunc.send(...methodArgs, opt);
+      const tx = await methodFunc.send(...callArgs, opt);
       const transactionHash = tx.hash;
       dlog('Transaction sent');
 
