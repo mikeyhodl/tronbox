@@ -45,9 +45,7 @@ function isLocalNode(url) {
 }
 
 function validateNodeUrl(nodeUrl, configKey = 'node URL', logger = {}) {
-  if (!nodeUrl || typeof nodeUrl !== 'string') {
-    return nodeUrl;
-  }
+  if (!nodeUrl || typeof nodeUrl !== 'string') return;
 
   let parsedUrl;
   try {
@@ -67,8 +65,6 @@ function validateNodeUrl(nodeUrl, configKey = 'node URL', logger = {}) {
       `${configKey} is using http for a non-local URL. It's recommended to use https for security reasons.\n`
     );
   }
-
-  return nodeUrl;
 }
 
 function filterNetworkConfig(options) {
