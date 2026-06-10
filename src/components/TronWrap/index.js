@@ -260,54 +260,56 @@ function init(options, extraOptions = {}) {
     }
   };
 
-  tronWrap._deployContract = function (option, callback) {
-    if (extraOptions.evm) return tronWrap._evmDeployContract(option, callback);
+  tronWrap._deployContract = function (txOptions, callback) {
+    if (extraOptions.evm) return tronWrap._evmDeployContract(txOptions, callback);
 
     const myContract = this.contract();
-    const originEnergyLimit = option.originEnergyLimit || this.networkConfig.originEnergyLimit;
+    const originEnergyLimit = txOptions.originEnergyLimit || this.networkConfig.originEnergyLimit;
     if (originEnergyLimit <= 0) {
       throw new Error('Origin Energy Limit must be > 0');
     }
 
     const userFeePercentage =
-      typeof option.userFeePercentage === 'number' ? option.userFeePercentage : this.networkConfig.userFeePercentage;
+      typeof txOptions.userFeePercentage === 'number'
+        ? txOptions.userFeePercentage
+        : this.networkConfig.userFeePercentage;
 
-    const constructorAbi = option.abi.find(it => it.type === 'constructor');
-    if (constructorAbi && option.parameters && option.parameters.length) {
-      option.rawParameter = this.utils.abi.encodeParamsV2ByABI(constructorAbi, option.parameters);
+    const constructorAbi = txOptions.abi.find(it => it.type === 'constructor');
+    if (constructorAbi && txOptions.parameters && txOptions.parameters.length) {
+      txOptions.rawParameter = this.utils.abi.encodeParamsV2ByABI(constructorAbi, txOptions.parameters);
     }
 
     this._new(
       myContract,
       {
-        bytecode: option.data,
-        feeLimit: option.feeLimit || this.networkConfig.feeLimit,
-        callValue: option.callValue || this.networkConfig.callValue,
+        bytecode: txOptions.data,
+        feeLimit: txOptions.feeLimit || this.networkConfig.feeLimit,
+        callValue: txOptions.callValue || this.networkConfig.callValue,
         userFeePercentage,
         originEnergyLimit,
-        abi: option.abi,
-        parameters: option.parameters,
-        rawParameter: option.rawParameter,
-        name: option.contractName,
-        from: option.from || '',
-        blockHeader: option.blockHeader
+        abi: txOptions.abi,
+        parameters: txOptions.parameters,
+        rawParameter: txOptions.rawParameter,
+        name: txOptions.contractName,
+        from: txOptions.from || '',
+        blockHeader: txOptions.blockHeader
       },
-      option.privateKey
+      txOptions.privateKey
     )
       .then(() => {
         callback(null, myContract);
-        option.address = myContract.address;
+        txOptions.address = myContract.address;
       })
       .catch(function (reason) {
         callback(new Error(reason));
       });
   };
 
-  tronWrap._new = async function (myContract, options, _privateKey) {
+  tronWrap._new = async function (myContract, txOptions, _privateKey) {
     let signedTransaction;
     try {
-      const address = options.from ? options.from : tronWrap._accounts[0];
-      const transaction = await tronWrap.transactionBuilder.createSmartContract(options, address);
+      const address = txOptions.from ? txOptions.from : tronWrap._accounts[0];
+      const transaction = await tronWrap.transactionBuilder.createSmartContract(txOptions, address);
       if (tronWrap._treUnlockedAccounts[address]) {
         dlog('Unlocked account', { address });
         signedTransaction = transaction;
@@ -323,7 +325,7 @@ function init(options, extraOptions = {}) {
 
       if (!result || typeof result !== 'object') {
         return Promise.reject(
-          `Error while broadcasting the transaction to create the contract ${options.name}. Most likely, the creator has either insufficient bandwidth or energy.`
+          `Error while broadcasting the transaction to create the contract ${txOptions.name}. Most likely, the creator has either insufficient bandwidth or energy.`
         );
       }
 
@@ -331,7 +333,7 @@ function init(options, extraOptions = {}) {
         return Promise.reject(
           `${result.code} (${tronWrap.toUtf8(
             result.message
-          )}) while broadcasting the transaction to create the contract ${options.name}`
+          )}) while broadcasting the transaction to create the contract ${txOptions.name}`
         );
       }
 
@@ -367,10 +369,10 @@ function init(options, extraOptions = {}) {
       myContract.bytecode = contract.bytecode;
       myContract.deployed = true;
 
-      myContract.loadAbi(JSON.parse(JSON.stringify(options.abi || [])));
+      myContract.loadAbi(JSON.parse(JSON.stringify(txOptions.abi || [])));
       myContract.transactionHash = transaction.txID;
 
-      dlog('Contract deployed:', options.name);
+      dlog('Contract deployed:', txOptions.name);
       return Promise.resolve(myContract);
     } catch (ex) {
       let e;
@@ -379,7 +381,7 @@ function init(options, extraOptions = {}) {
 
         e =
           'Contract ' +
-          chalk.bold(options.name) +
+          chalk.bold(txOptions.name) +
           ' has not been deployed on the network.\nFor more details, check the transaction at:\n' +
           chalk.blue(url) +
           '\nIf the transaction above is empty, most likely, your address had no bandwidth/energy to deploy the contract.';
@@ -389,42 +391,42 @@ function init(options, extraOptions = {}) {
     }
   };
 
-  tronWrap._triggerContract = async function (option, callback) {
-    if (extraOptions.evm) return tronWrap._evmTriggerContract(option, callback);
+  tronWrap._triggerContract = async function (txOptions, callback) {
+    if (extraOptions.evm) return tronWrap._evmTriggerContract(txOptions, callback);
 
     try {
-      const myContract = this.contract(option.abi, option.address);
-      const funAbi = tronWrap._findMethodAbi(option.methodName, option.abi);
+      const myContract = this.contract(txOptions.abi, txOptions.address);
+      const funAbi = tronWrap._findMethodAbi(txOptions.methodName, txOptions.abi);
       const callSend = /payable/.test(funAbi.stateMutability) ? 'send' : 'call';
-      option.methodArgs || (option.methodArgs = {});
-      option.methodArgs.from || (option.methodArgs.from = this._accounts[0]);
+      txOptions.methodArgs || (txOptions.methodArgs = {});
+      txOptions.methodArgs.from || (txOptions.methodArgs.from = this._accounts[0]);
 
-      dlog(option.methodName, option.args, option.methodArgs);
+      dlog(txOptions.methodName, txOptions.args, txOptions.methodArgs);
 
-      const address = option.methodArgs.from;
+      const address = txOptions.methodArgs.from;
       const privateKey = callSend === 'send' && address ? privateKeyByAccount[address] : undefined;
 
-      if (!option.methodArgs.feeLimit) {
-        option.methodArgs.feeLimit = this.networkConfig.feeLimit;
+      if (!txOptions.methodArgs.feeLimit) {
+        txOptions.methodArgs.feeLimit = this.networkConfig.feeLimit;
       }
 
       if (callSend === 'send' && tronWrap._treUnlockedAccounts[address]) {
         dlog('Unlocked account', { address });
 
-        const { abi, functionSelector, defaultOptions } = myContract.methodInstances[option.methodName];
-        const rawParameter = this.utils.abi.encodeParamsV2ByABI(abi, option.args);
+        const { abi, functionSelector, defaultOptions } = myContract.methodInstances[txOptions.methodName];
+        const rawParameter = this.utils.abi.encodeParamsV2ByABI(abi, txOptions.args);
         const { stateMutability } = abi;
 
         if (!['payable'].includes(stateMutability.toLowerCase())) {
-          delete option.methodArgs.callValue;
-          delete option.methodArgs.tokenId;
-          delete option.methodArgs.tokenValue;
+          delete txOptions.methodArgs.callValue;
+          delete txOptions.methodArgs.tokenId;
+          delete txOptions.methodArgs.tokenValue;
         }
 
-        const triggerOptions = { ...defaultOptions, ...option.methodArgs, rawParameter };
+        const triggerOptions = { ...defaultOptions, ...txOptions.methodArgs, rawParameter };
 
         const transaction = await tronWrap.transactionBuilder.triggerSmartContract(
-          option.address,
+          txOptions.address,
           functionSelector,
           triggerOptions,
           [],
@@ -450,7 +452,10 @@ function init(options, extraOptions = {}) {
         return callback(`No private key available for from address ${address}. `);
       }
 
-      const res = await myContract[option.methodName](...option.args)[callSend](option.methodArgs || {}, privateKey);
+      const res = await myContract[txOptions.methodName](...txOptions.args)[callSend](
+        txOptions.methodArgs || {},
+        privateKey
+      );
       callback(null, res);
     } catch (reason) {
       if (reason && typeof reason.message === 'string') {
@@ -549,16 +554,16 @@ function init(options, extraOptions = {}) {
     return accounts;
   };
 
-  tronWrap._evmDeployContract = async function (option, callback) {
+  tronWrap._evmDeployContract = async function (txOptions, callback) {
     const opt = {
-      from: option.from || tronWrap._ethers_accounts[0],
-      gas: option.gas || option.gasLimit || this.networkConfig.gas,
-      gasPrice: option.gasPrice || this.networkConfig.gasPrice,
-      maxPriorityFeePerGas: option.maxPriorityFeePerGas || this.networkConfig.maxPriorityFeePerGas,
-      maxFeePerGas: option.maxFeePerGas || this.networkConfig.maxFeePerGas,
-      value: option.value || option.callValue || option.call_value,
-      nonce: option.nonce,
-      type: option.type
+      from: txOptions.from || tronWrap._ethers_accounts[0],
+      gas: txOptions.gas || txOptions.gasLimit || this.networkConfig.gas,
+      gasPrice: txOptions.gasPrice || this.networkConfig.gasPrice,
+      maxPriorityFeePerGas: txOptions.maxPriorityFeePerGas || this.networkConfig.maxPriorityFeePerGas,
+      maxFeePerGas: txOptions.maxFeePerGas || this.networkConfig.maxFeePerGas,
+      value: txOptions.value || txOptions.callValue || txOptions.call_value,
+      nonce: txOptions.nonce,
+      type: txOptions.type
     };
 
     if (opt.maxPriorityFeePerGas || opt.maxFeePerGas) {
@@ -572,13 +577,13 @@ function init(options, extraOptions = {}) {
     });
 
     try {
-      dlog('Deploying contract:', option.contractName);
+      dlog('Deploying contract:', txOptions.contractName);
       if (opt.nonce === undefined) {
         opt.nonce = await tronWrap._evmGetNonce(opt.from);
       }
       const wallet = ethersWallets[opt.from];
-      const factory = new ethers.ContractFactory(option.abi, option.data, wallet);
-      const constructorArgs = option.parameters || [];
+      const factory = new ethers.ContractFactory(txOptions.abi, txOptions.data, wallet);
+      const constructorArgs = txOptions.parameters || [];
       const deployedContract = await factory.deploy(...constructorArgs, opt);
       const deploymentTx = deployedContract.deploymentTransaction();
       if (!deploymentTx) {
@@ -599,7 +604,7 @@ function init(options, extraOptions = {}) {
         return callback(new Error(`Contract deployment failed (${statusMsg})`));
       }
 
-      dlog('Contract deployed:', option.contractName);
+      dlog('Contract deployed:', txOptions.contractName);
       callback(null, {
         address,
         transactionHash
@@ -609,8 +614,8 @@ function init(options, extraOptions = {}) {
     }
   };
 
-  tronWrap._evmTriggerContract = async function (option, callback) {
-    const { methodArgs } = option;
+  tronWrap._evmTriggerContract = async function (txOptions, callback) {
+    const { methodArgs } = txOptions;
     const opt = {
       from: methodArgs.from || tronWrap._ethers_accounts[0],
       gas: methodArgs.gas || methodArgs.gasLimit || this.networkConfig.gas,
@@ -633,7 +638,7 @@ function init(options, extraOptions = {}) {
     });
 
     let callSend = 'send';
-    const funAbi = tronWrap._findMethodAbi(option.methodName, option.abi);
+    const funAbi = tronWrap._findMethodAbi(txOptions.methodName, txOptions.abi);
     callSend = /payable/.test(funAbi.stateMutability) ? 'send' : 'call';
 
     try {
@@ -641,9 +646,9 @@ function init(options, extraOptions = {}) {
         opt.nonce = await tronWrap._evmGetNonce(opt.from);
       }
       const wallet = ethersWallets[opt.from];
-      const contract = new ethers.Contract(option.address, option.abi, wallet);
-      const callArgs = option.args || [];
-      const methodFunc = contract[option.methodName];
+      const contract = new ethers.Contract(txOptions.address, txOptions.abi, wallet);
+      const callArgs = txOptions.args || [];
+      const methodFunc = contract[txOptions.methodName];
 
       if (callSend === 'call') {
         const callRes = await methodFunc.staticCall(...callArgs, opt);
