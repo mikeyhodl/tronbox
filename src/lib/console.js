@@ -156,7 +156,7 @@ Console.prototype.interpret = function (cmd, context, filename, callback) {
     return callback();
   }
 
-  const cmdRes = this.command.getCommand(cmd, this.options.noAliases);
+  const cmdRes = this.command.getCommand(cmd);
   if (cmdRes != null) {
     if (cmdRes.name === 'help') {
       return self.command.run(cmd, this.options, callback);

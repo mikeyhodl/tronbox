@@ -64,12 +64,7 @@ Usage: $0 console [--network <network>] [--evm]`
     Environment.detect(config, function (err) {
       if (err) return done(err);
 
-      const c = new Console(
-        console_commands,
-        config.with({
-          noAliases: true
-        })
-      );
+      const c = new Console(console_commands, config.with({}));
       c.start(done);
     });
   }
