@@ -89,6 +89,9 @@ Usage: $0 test [<files...>] [--file <file>]
               new Error(`${file} is not a JavaScript test file. tronbox runs tests written in JavaScript.`)
             );
           }
+          if (!fs.existsSync(resolvedPath)) {
+            return callback(new Error(`${file} does not exist.`));
+          }
         }
         return callback(null, files);
       }
