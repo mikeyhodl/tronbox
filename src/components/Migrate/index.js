@@ -185,7 +185,7 @@ const Migrate = {
         migrations.shift();
       }
 
-      if (options.to) {
+      if (Number.isFinite(options.to)) {
         migrations = migrations.filter(function (migration) {
           return migration.number <= options.to;
         });

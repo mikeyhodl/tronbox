@@ -80,8 +80,8 @@ Usage: $0 ${cmd} [--network <network>]
     }
 
     function runMigrations(callback) {
-      if (options.f) {
-        Migrate.runFrom(options.f, config, done);
+      if (Number.isFinite(options.f)) {
+        Migrate.runFrom(Math.max(0, options.f), config, done);
       } else {
         Migrate.needsMigrating(config, function (err, needsMigrating) {
           if (err) return callback(err);
