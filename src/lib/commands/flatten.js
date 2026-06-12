@@ -30,7 +30,7 @@ Usage: $0 flatten <files...>`
 
     if (!filePaths.length) {
       console.error('Usage: tronbox flatten <files...>\n');
-      done();
+      done(1);
       return;
     }
 
