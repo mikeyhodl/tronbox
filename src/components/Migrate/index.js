@@ -121,7 +121,7 @@ const Migrate = {
 
       let migrations = files
         .filter(function (file) {
-          return isNaN(parseInt(path.basename(file))) === false;
+          return parseInt(path.basename(file)) >= 0;
         })
         .filter(function (file) {
           return path.extname(file).match(options.allowed_extensions) != null;
