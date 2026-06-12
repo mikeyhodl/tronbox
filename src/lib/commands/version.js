@@ -16,7 +16,6 @@ Usage: $0 version`
   },
   run: function (options, done) {
     process.env.CURRENT = 'version';
-    const version = require('../version');
 
     let bundle_version;
 
