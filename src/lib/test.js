@@ -30,14 +30,6 @@ const Test = {
       return path.resolve(test_file);
     });
 
-    // Output looks like this during tests: https://gist.github.com/tcoulter/1988349d1ec65ce6b958
-    const warn = config.logger.warn;
-    config.logger.warn = function (message) {
-      if (message !== 'cannot find event for log' && warn) {
-        warn.apply(console, arguments);
-      }
-    };
-
     const mocha = this.createMocha(config);
 
     const js_tests = config.test_files.filter(function (file) {
@@ -90,7 +82,6 @@ const Test = {
       })
       .then(function () {
         mocha.run(function (failures) {
-          config.logger.warn = warn;
           callback(failures);
         });
       })
