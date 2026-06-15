@@ -44,12 +44,12 @@ const Test = {
       return path.extname(file) !== '.sol';
     });
 
+    // Reserved for future `.sol` tests; excluded by `test_file_extension_regexp`.
     const sol_tests = config.test_files.filter(function (file) {
       return path.extname(file) === '.sol';
     });
 
     // Add JavaScript tests because there's nothing we need to do with them.
-    // Solidity tests will be handled later.
     js_tests.forEach(function (file) {
       // There's an idiosyncrasy in Mocha where the same file can't be run twice
       // unless we delete the `require` cache.
