@@ -133,7 +133,7 @@ async function printFileContents(files, log) {
 }
 
 function getFilePathsFromProjectRoot(filePaths, projectRoot, fromDir = process.cwd()) {
-  return filePaths.map(f => path.relative(projectRoot, path.resolve(fromDir, f)));
+  return filePaths.map(f => path.relative(projectRoot, path.resolve(fromDir, f)).replace(/\\/g, '/'));
 }
 
 function removeDuplicateAndSurroundingWhitespaces(str) {
