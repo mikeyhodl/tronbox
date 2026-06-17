@@ -20,7 +20,7 @@ module.exports = function (contract, args, deployer) {
         // Check the last argument. If it's an object that tells us not to overwrite, then lets not.
         if (new_args.length > 0) {
           const last_arg = new_args[new_args.length - 1];
-          if (typeof last_arg === 'object' && last_arg !== null) {
+          if (typeof last_arg === 'object' && last_arg !== null && !Array.isArray(last_arg)) {
             const { overwrite, ...rest } = last_arg;
             if (overwrite === false && contract.isDeployed()) {
               should_deploy = false;

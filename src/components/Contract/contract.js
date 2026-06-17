@@ -66,7 +66,7 @@ function toCamelCase(str) {
 function filterEnergyParameter(args) {
   const deployParameters = Object.keys(constants.deployParameters);
   const lastArg = args[args.length - 1];
-  if (typeof lastArg !== 'object' || Array.isArray(lastArg)) return [args, {}];
+  if (typeof lastArg !== 'object' || lastArg === null || Array.isArray(lastArg)) return [args, {}];
   args.pop();
   const res = {};
   Object.keys(lastArg).forEach(property => {
