@@ -247,6 +247,8 @@ function replaceLinkReferences(bytecode, linkReferences, libraryName) {
 // strict: Boolean. Return compiler warnings as errors. Defaults to false.
 compile.all = function (options, callback) {
   findContracts(options.contracts_directory, function (err, files) {
+    if (err) return callback(err);
+
     options.paths = files;
     compile.with_dependencies(options, callback);
   });
