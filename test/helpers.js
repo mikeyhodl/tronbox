@@ -13,7 +13,7 @@ const artifact = (buildDir, name) => path.join(buildDir, 'contracts', `${name}.j
 // Spawn the dev tronbox CLI. Default timeout exceeds the longest file-level
 // mocha timeout (300s) so a single CLI call never silently undercuts a test.
 function runCli(args, { cwd = FIXTURE_DIR, env = {}, input, timeout = 300_000 } = {}) {
-  return spawnSync(TRONBOX_BIN, args, {
+  return spawnSync(process.execPath, [TRONBOX_BIN, ...args], {
     cwd,
     encoding: 'utf-8',
     timeout,
@@ -29,7 +29,7 @@ function runCli(args, { cwd = FIXTURE_DIR, env = {}, input, timeout = 300_000 } 
 // before it can produce output.
 function runCliRepl(args, { cwd = FIXTURE_DIR, env = {}, steps = [], timeout = 180_000 } = {}) {
   return new Promise((resolve, reject) => {
-    const child = spawn(TRONBOX_BIN, args, {
+    const child = spawn(process.execPath, [TRONBOX_BIN, ...args], {
       cwd,
       env: { ...process.env, ...env, FORCE_COLOR: '0' }
     });

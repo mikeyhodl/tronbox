@@ -105,7 +105,7 @@ You are using version ${chalk.yellow(compilerVersion)}, which is not supported.`
         args.push('--evm');
       }
 
-      const result = execFileSync(cliPath, args, {
+      const result = execFileSync(process.execPath, [cliPath, ...args], {
         env: { ...process.env, FORCE_COLOR: '1' },
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'pipe']
