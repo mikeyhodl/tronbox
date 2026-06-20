@@ -41,7 +41,7 @@
     "source-map-support": "0.5.21",
     "tronweb": "6.3.0",
     "yargs": "15.4.1",
-    "yauzl": "3.2.1"
+    "yauzl": "3.4.0"
   },
   "devDependencies": {
     "@babel/cli": "7.28.3",
