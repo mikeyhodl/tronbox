@@ -3,7 +3,7 @@ const chalk = require('chalk');
 const parser = require('@solidity-parser/parser');
 const Config = require('../Config');
 const Resolver = require('../Resolver');
-const packageJson = require('../../../package.json');
+const pkg = require('../../lib/pkg');
 
 const SPDX_LICENSES_REGEX = /^(?:\/\/|\/\*)\s*SPDX-License-Identifier:\s*([a-zA-Z\d+.-]+).*/gm;
 const PRAGMA_DIRECTIVES_REGEX = /^(?: |\t)*(pragma\s*abicoder\s*v(1|2)|pragma\s*experimental\s*ABIEncoderV2)\s*;/gim;
@@ -239,7 +239,7 @@ const Flatten = {
     const projectRoot = config.working_directory;
     const absoluteFilePaths = filePaths.map(f => path.resolve(process.cwd(), f));
 
-    let res = `// Sources flattened with TronBox v${packageJson.version} ${packageJson.homepage}`;
+    let res = `// Sources flattened with TronBox v${pkg.version} ${pkg.homepage}`;
     getSortedFilePaths(absoluteFilePaths, resolver, config)
       .then(({ sortedFiles, resolvedCache }) => {
         const fileContents = sortedFiles.map(file => {

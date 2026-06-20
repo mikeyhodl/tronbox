@@ -51,7 +51,7 @@ function formatCommands(commands) {
   });
 }
 
-const version = require('../version');
+const pkg = require('../pkg');
 const describe = 'Download a pre-built TronBox Box template';
 
 const command = {
@@ -60,7 +60,7 @@ const command = {
   builder: yargs => {
     yargs
       .usage(
-        `TronBox v${version.bundle}\n\n${describe}\n
+        `TronBox v${pkg.version}\n\n${describe}\n
 Usage: $0 unbox [<name>] [--quiet]`
       )
       .version(false)

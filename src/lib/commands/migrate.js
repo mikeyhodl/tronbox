@@ -1,4 +1,4 @@
-const version = require('../version');
+const pkg = require('../pkg');
 const describe = 'Run migrations to deploy contracts';
 
 const command = {
@@ -7,7 +7,7 @@ const command = {
   builder: (yargs, cmd = 'migrate') => {
     yargs
       .usage(
-        `TronBox v${version.bundle}\n\n${describe}\n
+        `TronBox v${pkg.version}\n\n${describe}\n
 Usage: $0 ${cmd} [--network <network>]
                ${' '.repeat(cmd.length)} [--reset] [--from <number>] [--to <number>]
                ${' '.repeat(cmd.length)} [--compile-all] [--evm] [--quiet]`

@@ -1,12 +1,13 @@
 const TronBoxError = require('./errors/tronBoxError');
 const yargs = require('yargs/yargs');
 const _ = require('lodash');
-const version = require('./version');
+const pkg = require('./pkg');
 
 function Command(commands) {
   this.commands = commands;
 
   const args = yargs()
+    .scriptName(pkg.name)
     .parserConfiguration({ 'duplicate-arguments-array': false })
     .detectLocale(false)
     .exitProcess(false);
@@ -62,7 +63,7 @@ Command.prototype.run = function (command, options, callback) {
 
 Please use \`tronbox help\` to see a list of available commands.
 
-TronBox v${version.bundle}`
+TronBox v${pkg.version}`
       )
     );
   }

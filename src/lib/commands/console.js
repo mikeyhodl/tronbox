@@ -1,4 +1,4 @@
-const version = require('../version');
+const pkg = require('../pkg');
 const describe = 'Run a console with contract abstractions and commands available';
 
 const command = {
@@ -7,7 +7,7 @@ const command = {
   builder: yargs => {
     yargs
       .usage(
-        `TronBox v${version.bundle}\n\n${describe}\n
+        `TronBox v${pkg.version}\n\n${describe}\n
 Usage: $0 console [--network <network>] [--evm]`
       )
       .version(false)

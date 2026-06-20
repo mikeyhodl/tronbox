@@ -4,7 +4,7 @@ const path = require('path');
 const chalk = require('chalk');
 const fs = require('fs-extra');
 const homedir = require('homedir');
-const pkg = require('../../package');
+const pkg = require('../lib/pkg');
 
 const maxVersion = '0.8.26';
 

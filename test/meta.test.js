@@ -13,7 +13,7 @@ describe('tronbox CLI', function () {
       expect(r.stderr).to.include('TronBox v');
       expect(r.stderr).to.include('Usage: tronbox <command> [options]');
       ['init', 'compile', 'migrate', 'deploy', 'test', 'console', 'flatten', 'unbox', 'version'].forEach(c => {
-        expect(r.stderr).to.include(c);
+        expect(r.stderr).to.include(`tronbox ${c}`);
       });
     };
 
@@ -41,8 +41,7 @@ describe('tronbox CLI', function () {
         expect(r.status, r.stderr).to.equal(0);
         expect(r.stdout).to.include('TronBox v');
         expect(r.stdout).to.include(banner);
-        expect(r.stdout).to.include(`Usage: tronbox`);
-        expect(r.stdout).to.include(cmd);
+        expect(r.stdout).to.include(`Usage: tronbox ${cmd}`);
       });
     });
   });
