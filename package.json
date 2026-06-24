@@ -29,7 +29,7 @@
     "chalk": "2.4.2",
     "debug": "3.2.7",
     "enquirer": "2.4.1",
-    "ethers": "6.15.0",
+    "ethers": "6.17.0",
     "find-up": "4.1.0",
     "fs-extra": "8.1.0",
     "graphlib": "2.1.8",
@@ -59,7 +59,8 @@
       "serialize-javascript": "7.0.5"
     },
     "tronweb": {
-      "axios": "1.16.1"
+      "axios": "1.16.1",
+      "ws": "8.21.0"
     }
   },
   "bin": {
