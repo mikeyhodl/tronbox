@@ -1,6 +1,7 @@
 const { ethers } = require('ethers');
 const TronWrap = require('../TronWrap');
 const { constants } = require('../TronWrap');
+const NotDeployedError = require('../../lib/errors/notDeployedError');
 
 let tronWrap;
 
@@ -237,7 +238,7 @@ Contract._static_methods = {
     return new Promise(function (accept, reject) {
       // If we found the network but it's not deployed
       if (!self.isDeployed()) {
-        throw new Error(self.contractName + ' has not been deployed to detected network');
+        throw new NotDeployedError(self.contractName);
       }
 
       let getContract;
@@ -250,14 +251,13 @@ Contract._static_methods = {
       }
       getContract
         .then(res => {
-          const noCodeMsg = `${self.contractName} has not been deployed to detected network; no code at address ${self.address}`;
           if (tronWrap._ethers) {
             if (res === '0x') {
-              throw new Error(noCodeMsg);
+              throw new NotDeployedError(self.contractName, self.address);
             }
           } else {
             if (!res.contract_address) {
-              throw new Error(noCodeMsg);
+              throw new NotDeployedError(self.contractName, self.address);
             }
           }
           const abi = self.abi || [];

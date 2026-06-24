@@ -5,6 +5,7 @@ const Require = require('../Require');
 const async = require('async');
 const { expect } = require('../../lib/utils');
 const Deployer = require('../Deployer');
+const NotDeployedError = require('../../lib/errors/notDeployedError');
 
 const TronWrap = require('../TronWrap');
 const waitForTransactionReceipt = require('../waitForTransactionReceipt');
@@ -213,8 +214,6 @@ const Migrate = {
   },
 
   lastCompletedMigration: function (options, callback) {
-    // if called from console, tronWrap is null here
-    // but the singleton has been initiated so:
     if (!tronWrap) {
       tronWrap = TronWrap();
     }
@@ -223,29 +222,28 @@ const Migrate = {
     try {
       Migrations = options.resolver.require('Migrations');
     } catch (error) {
-      // don't throw, Migrations contract optional
-      return callback(null, 0);
-    }
-
-    if (Migrations.isDeployed() === false) {
-      return callback(null, 0);
+      return callback(null, 0); // Migrations contract is optional
     }
 
     Migrations.deployed()
       .then(function (migrations) {
         // Two possible Migrations.sol's (lintable/unlintable)
-
-        return tronWrap.filterMatchFunction('last_completed_migration', migrations.abi)
-          ? migrations.call('last_completed_migration')
-          : migrations.call('lastCompletedMigration');
+        const method = tronWrap.filterMatchFunction('last_completed_migration', migrations.abi)
+          ? 'last_completed_migration'
+          : 'lastCompletedMigration';
+        return migrations.call(method);
       })
-      .then(function (completed_migration) {
-        callback(null, Number(completed_migration));
-      })
-      .catch(() => {
-        // first migration:
-        callback(null, 0);
-      });
+      .then(
+        function (completed) {
+          callback(null, Number(completed));
+        },
+        function (error) {
+          if (error instanceof NotDeployedError) {
+            return callback(null, 0);
+          }
+          callback(error);
+        }
+      );
   },
 
   needsMigrating: function (options, callback) {
