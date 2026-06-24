@@ -4,7 +4,7 @@
 const path = require('path');
 const async = require('async');
 const fs = require('fs');
-const Graph = require('graphlib').Graph;
+const { Graph } = require('graphlib');
 const parser = require('@solidity-parser/parser');
 const { expect, findContracts } = require('../../lib/utils');
 const CompileError = require('../../lib/errors/compileError');

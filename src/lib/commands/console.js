@@ -31,9 +31,9 @@ Usage: $0 console [--network <network>] [--evm]`
     const Config = require('../../components/Config');
     const Console = require('../console');
     const Environment = require('../environment');
-
     const TronWrap = require('../../components/TronWrap');
-    const logErrorAndExit = require('../../components/TronWrap').logErrorAndExit;
+
+    const { logErrorAndExit } = TronWrap;
 
     const config = Config.detect(options);
 

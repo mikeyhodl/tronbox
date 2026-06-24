@@ -51,7 +51,8 @@ Usage: $0 test [<files...>] [--file <file>]
     const fs = require('fs-extra');
     const Environment = require('../environment');
     const TronWrap = require('../../components/TronWrap');
-    const logErrorAndExit = require('../../components/TronWrap').logErrorAndExit;
+
+    const { logErrorAndExit } = TronWrap;
 
     const config = Config.detect(options);
 

@@ -1,7 +1,8 @@
 const { ethers } = require('ethers');
 const TronWrap = require('../TronWrap');
-const { constants } = require('../TronWrap');
 const NotDeployedError = require('../../lib/errors/notDeployedError');
+
+const { constants } = TronWrap;
 
 let tronWrap;
 

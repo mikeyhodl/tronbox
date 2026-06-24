@@ -57,8 +57,8 @@ Usage: $0 ${cmd} [--network <network>]
     const Migrate = require('../../components/Migrate');
     const Environment = require('../environment');
     const TronWrap = require('../../components/TronWrap');
-    const { dlog } = require('../../components/TronWrap');
-    const logErrorAndExit = require('../../components/TronWrap').logErrorAndExit;
+
+    const { dlog, logErrorAndExit } = TronWrap;
 
     if (options.quiet || options.silent) {
       options.logger = {

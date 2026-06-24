@@ -4,6 +4,7 @@ const path = require('path');
 const CompileError = require('../../lib/errors/compileError');
 const { expect, findContracts } = require('../../lib/utils');
 const Config = require('../Config');
+const { preReleaseCompilerWarning } = require('./messages');
 
 // Most basic of the compile commands. Takes a hash of sources, where
 // the keys are file or module paths and the values are the bodies of
@@ -15,8 +16,6 @@ const Config = require('../Config');
 //   quiet: false,
 //   logger: console
 // }
-
-const preReleaseCompilerWarning = require('./messages').preReleaseCompilerWarning;
 
 const compile = function (sources, options, callback) {
   if (typeof options === 'function') {

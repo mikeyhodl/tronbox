@@ -9,9 +9,10 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const EventEmitter = require('events');
-const inherits = require('util').inherits;
+const { inherits } = require('util');
 const chalk = require('chalk');
-const logErrorAndExit = require('../components/TronWrap').logErrorAndExit;
+
+const { logErrorAndExit } = TronWrap;
 
 inherits(Console, EventEmitter);
 

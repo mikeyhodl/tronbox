@@ -1,7 +1,8 @@
 const TronWrap = require('../../../TronWrap');
-const { dlog } = require('../../../TronWrap');
 const Contract = require('../../../Contract');
 const provision = require('../../../Provisioner');
+
+const { dlog } = TronWrap;
 
 module.exports = function (contract, args, deployer) {
   return function () {
