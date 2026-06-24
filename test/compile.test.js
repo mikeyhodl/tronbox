@@ -63,12 +63,10 @@ describe('tronbox compile', function () {
 
     it('different compilation contexts accumulate distinct build-info entries', () => {
       fs.removeSync(buildDir);
-      const r1 = runCli(['compile', '--all'], { cwd });
-      expect(r1.status, r1.stderr).to.equal(0);
+      expect(runCli(['compile', '--all'], { cwd }).status).to.equal(0);
       expect(buildInfoPairs()).to.have.lengthOf(1);
 
-      const r2 = runCli(['compile', 'contracts/Empty.sol'], { cwd });
-      expect(r2.status, r2.stderr).to.equal(0);
+      expect(runCli(['compile', 'contracts/Empty.sol'], { cwd }).status).to.equal(0);
       expect(buildInfoPairs()).to.have.lengthOf(2);
     });
   });
