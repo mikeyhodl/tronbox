@@ -65,19 +65,18 @@ function toCamelCase(str) {
   return str.replace(/_([a-z])/g, g => g[1].toUpperCase());
 }
 
-function filterEnergyParameter(args) {
-  const deployParameters = Object.keys(constants.deployParameters);
-  const lastArg = args[args.length - 1];
-  if (typeof lastArg !== 'object' || lastArg === null || Array.isArray(lastArg)) return [args, {}];
-  args.pop();
-  const res = {};
+function filterEnergyParameter(rawArgs, whitelist) {
+  const lastArg = rawArgs[rawArgs.length - 1];
+  if (typeof lastArg !== 'object' || lastArg === null || Array.isArray(lastArg)) return [rawArgs, {}];
+  const args = rawArgs.slice(0, -1);
+  const options = {};
   Object.keys(lastArg).forEach(property => {
     const camelCased = toCamelCase(property);
-    if (~deployParameters.indexOf(camelCased)) {
-      res[camelCased] = lastArg[property];
-    }
+    if (property !== camelCased && camelCased in lastArg) return;
+    if (whitelist && !~whitelist.indexOf(camelCased)) return;
+    options[camelCased] = lastArg[property];
   });
-  return [args, res];
+  return [args, options];
 }
 
 Contract._static_methods = {
@@ -87,10 +86,10 @@ Contract._static_methods = {
     }
   },
 
-  new: function () {
+  new: function (...rawArgs) {
     const self = this;
 
-    const [args, params] = filterEnergyParameter(Array.prototype.slice.call(arguments));
+    const [args, params] = filterEnergyParameter(rawArgs, Object.keys(constants.deployParameters));
 
     if (!this.bytecode) {
       throw new Error(this._json.contractName + " error: contract binary not set. Can't deploy new instance.");
@@ -187,18 +186,10 @@ Contract._static_methods = {
     return newContract.deployed();
   },
 
-  call: function (methodName, ...args) {
+  call: function (methodName, ...rawArgs) {
     const self = this;
-    let methodArgs = {};
 
-    const lastArg = args[args.length - 1];
-    if (!Array.isArray(lastArg) && typeof lastArg === 'object') {
-      methodArgs = args.pop();
-    }
-
-    if (!methodArgs.call_value) {
-      methodArgs.call_value = 0;
-    }
+    let [args, methodArgs] = filterEnergyParameter(rawArgs);
 
     if (args.length === 1 && Array.isArray(args[0])) {
       try {
