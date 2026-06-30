@@ -557,7 +557,7 @@ function init(options, extraOptions = {}) {
   tronWrap._evmDeployContract = async function (txOptions, callback) {
     const opt = {
       from: txOptions.from || tronWrap._ethers_accounts[0],
-      gas: txOptions.gas || txOptions.gasLimit || this.networkConfig.gas,
+      gasLimit: txOptions.gas || txOptions.gasLimit || this.networkConfig.gas,
       gasPrice: txOptions.gasPrice || this.networkConfig.gasPrice,
       maxPriorityFeePerGas: txOptions.maxPriorityFeePerGas || this.networkConfig.maxPriorityFeePerGas,
       maxFeePerGas: txOptions.maxFeePerGas || this.networkConfig.maxFeePerGas,
@@ -618,7 +618,7 @@ function init(options, extraOptions = {}) {
     const { methodArgs } = txOptions;
     const opt = {
       from: methodArgs.from || tronWrap._ethers_accounts[0],
-      gas: methodArgs.gas || methodArgs.gasLimit || this.networkConfig.gas,
+      gasLimit: methodArgs.gas || methodArgs.gasLimit || this.networkConfig.gas,
       gasPrice: methodArgs.gasPrice || this.networkConfig.gasPrice,
       maxPriorityFeePerGas: methodArgs.maxPriorityFeePerGas || this.networkConfig.maxPriorityFeePerGas,
       maxFeePerGas: methodArgs.maxFeePerGas || this.networkConfig.maxFeePerGas,
