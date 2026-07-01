@@ -69,25 +69,32 @@ function compareDependencyPaths(a, b) {
   return a.localeCompare(b);
 }
 
+function getAbsolutePath(importPath, workingDirectory) {
+  const location = path.isAbsolute(importPath) ? importPath : path.join(workingDirectory, 'node_modules', importPath);
+  return path.resolve(location).replace(/\\/g, '/');
+}
+
 async function getSortedFilePaths(entryPoints, resolver, config) {
   const sortedFiles = [];
   const visitedFiles = new Set();
   const processing = new Set();
   const resolvedCache = new Map();
 
-  async function visit(filePath) {
+  async function visit(importPath) {
+    const filePath = getAbsolutePath(importPath, config.working_directory);
+
     if (visitedFiles.has(filePath)) return;
 
     if (processing.has(filePath)) {
       throw new Error(
-        'There is a cycle in the dependency' + " graph, can't compute topological ordering. Files:\n\t" + filePath
+        'There is a cycle in the dependency' + " graph, can't compute topological ordering. Files:\n\t" + importPath
       );
     }
 
     processing.add(filePath);
 
-    const resolved = await resolve(filePath, resolver, config);
-    resolvedCache.set(filePath, resolved);
+    const resolved = await resolve(importPath, resolver, config);
+    resolvedCache.set(importPath, resolved);
     const dependencies = getDependencies(resolved.filePath, resolved.fileContents).sort(compareDependencyPaths);
 
     for (const dependency of dependencies) {
@@ -96,7 +103,7 @@ async function getSortedFilePaths(entryPoints, resolver, config) {
 
     processing.delete(filePath);
     visitedFiles.add(filePath);
-    sortedFiles.push(filePath);
+    sortedFiles.push(importPath);
   }
 
   for (const entryPoint of [...entryPoints].sort()) {
