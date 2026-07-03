@@ -19,9 +19,6 @@ ResolverIntercept.prototype.require = function (import_path) {
 
   this.cache[import_path] = resolved;
 
-  // The chain may be slow to accept transactions; never time out the wait.
-  resolved.synchronization_timeout = 0;
-
   return resolved;
 };
 
