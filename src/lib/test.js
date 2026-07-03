@@ -93,7 +93,8 @@ const Test = {
     const mochaConfig = config.mocha || {};
 
     mochaConfig.reporterOptions = {
-      maxDiffSize: 0
+      maxDiffSize: 0,
+      ...mochaConfig.reporterOptions
     };
 
     // If the command line overrides color usage, use that.
