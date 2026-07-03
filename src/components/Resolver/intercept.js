@@ -1,6 +1,6 @@
 function ResolverIntercept(resolver) {
   this.resolver = resolver;
-  this.cache = {};
+  this.cache = Object.create(null);
 }
 
 ResolverIntercept.prototype.require = function (import_path) {
