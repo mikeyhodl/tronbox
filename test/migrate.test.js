@@ -150,6 +150,25 @@ describe('tronbox migrate', function () {
     });
   });
 
+  describe('batch deploy', () => {
+    const env = {
+      CONTRACTS_DIR: 'contracts_advanced',
+      MIGRATIONS_DIR: 'migrations_advanced',
+      BUILD_DIR: 'build_advanced',
+      SOLC_VERSION: '0.8.20'
+    };
+    const altBuildDir = path.join(cwd, env.BUILD_DIR);
+
+    it('deploys each entry in an array to a distinct address', () => {
+      fs.removeSync(altBuildDir);
+      const r = runCli(['migrate'], { cwd, env });
+      expect(r.status, r.stderr).to.equal(0);
+      const addresses = [...r.stdout.matchAll(/Empty:\s+\(base58\) (\S+)/g)].map(m => m[1]);
+      expect(addresses).to.have.lengthOf(2);
+      expect(addresses[0]).to.not.equal(addresses[1]);
+    });
+  });
+
   describe('deploy alias', () => {
     it('behaves like migrate', () => {
       fs.removeSync(buildDir);
