@@ -7,7 +7,6 @@ const pkg = require('../../lib/pkg');
 
 const SPDX_LICENSES_REGEX = /^(?:\/\/|\/\*)\s*SPDX-License-Identifier:\s*([a-zA-Z\d+.-]+).*/gm;
 const PRAGMA_DIRECTIVES_REGEX = /^(?: |\t)*(pragma\s*abicoder\s*v(1|2)|pragma\s*experimental\s*ABIEncoderV2)\s*;/gim;
-const IMPORT_SOLIDITY_REGEX = /^\s*import(\s+)[\s\S]*?;\s*$/gm;
 
 async function resolve(importPath, resolver, config) {
   try {
@@ -36,16 +35,18 @@ function getDirPath(filePath) {
   return filePath.substring(0, Math.max(index1, index2));
 }
 
-function getDependencies(filePath, fileContents) {
+function getImports(filePath, fileContents) {
   try {
-    const ast = parser.parse(fileContents);
-    const imports = [];
+    const ast = parser.parse(fileContents, { range: true });
+    const dependencies = [];
+    const importRanges = [];
     parser.visit(ast, {
       ImportDirective: function (node) {
-        imports.push(getNormalizedDependencyPath(node.path, filePath));
+        dependencies.push(getNormalizedDependencyPath(node.path, filePath));
+        importRanges.push(node.range);
       }
     });
-    return imports;
+    return { dependencies, importRanges };
   } catch (error) {
     throw new Error('Could not parse ' + filePath + ' for extracting its imports: ' + error);
   }
@@ -94,8 +95,11 @@ async function getSortedFilePaths(entryPoints, resolver, config) {
     processing.add(filePath);
 
     const resolved = await resolve(importPath, resolver, config);
+    const { dependencies, importRanges } = getImports(resolved.filePath, resolved.fileContents);
+    dependencies.sort(compareDependencyPaths);
+    resolved.importRanges = importRanges;
+
     resolvedCache.set(importPath, resolved);
-    const dependencies = getDependencies(resolved.filePath, resolved.fileContents).sort(compareDependencyPaths);
 
     for (const dependency of dependencies) {
       await visit(dependency);
@@ -123,8 +127,8 @@ function fileNameToGlobalName(fileName, projectRoot) {
 }
 
 async function printFileContents(files, log) {
-  const parts = files.map(({ file, content, packageInfo }) => {
-    let normalizedText = getTextWithoutImports(content);
+  const parts = files.map(({ file, content, packageInfo, importRanges }) => {
+    let normalizedText = getTextWithoutImports(content, importRanges);
     normalizedText = commentOutLicenses(normalizedText);
     normalizedText = commentOutPragmaAbicoderDirectives(normalizedText);
 
@@ -222,8 +226,22 @@ function getPragmaAbicoderDirectiveHeader(pragmaDirective) {
   return pragmaDirective === '' ? '' : `\n\n${pragmaDirective};`;
 }
 
-function getTextWithoutImports(fileContent) {
-  return fileContent.replace(IMPORT_SOLIDITY_REGEX, '').trim();
+function getTextWithoutImports(fileContent, importRanges) {
+  // Remove each import [start, semicolon] plus trailing whitespace and the
+  // newline so the line collapses; a trailing comment stays.
+  const removals = importRanges.map(([start, semicolon]) => {
+    let end = semicolon + 1;
+    while (fileContent[end] === ' ' || fileContent[end] === '\t') end++;
+    if (fileContent[end] === '\r') end++;
+    if (fileContent[end] === '\n') end++;
+    return [start, end];
+  });
+
+  let result = fileContent;
+  for (const [start, end] of removals.sort((a, b) => b[0] - a[0])) {
+    result = result.slice(0, start) + result.slice(end);
+  }
+  return result.trim();
 }
 
 function commentOutLicenses(fileContent) {
@@ -254,7 +272,8 @@ const Flatten = {
           return {
             file: fileNameToGlobalName(file, projectRoot),
             content: resolved.fileContents,
-            packageInfo: resolved.packageInfo
+            packageInfo: resolved.packageInfo,
+            importRanges: resolved.importRanges
           };
         });
 
