@@ -44,6 +44,9 @@ describe('tronbox flatten', function () {
       // No raw `import` directives should remain in the output.
       expect(r.stdout).to.not.match(/^\s*import\s+['"]/m);
 
+      // A trailing comment on an import must survive stripping.
+      expect(r.stdout).to.include('// trailing comment');
+
       // Single consolidated SPDX header at the top.
       const headers = r.stdout.match(/^\/\/ SPDX-License-Identifier:/gm) || [];
       expect(headers).to.have.lengthOf(1);

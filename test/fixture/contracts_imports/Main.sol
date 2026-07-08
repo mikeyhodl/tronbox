@@ -9,7 +9,7 @@ pragma solidity ^0.8.20;
 import './B.sol';
 import './utils/Math.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import 'sol-mock/Foo.sol';
+import 'sol-mock/Foo.sol'; // trailing comment
 
 contract Main {
   IERC20 public token;
