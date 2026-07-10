@@ -1,6 +1,8 @@
 // Requires TRE running on http://127.0.0.1:9090.
 
 const { expect } = require('chai');
+const path = require('path');
+const fs = require('fs-extra');
 const { runCli, runCliRepl, FIXTURE_DIR } = require('./helpers');
 
 const cwd = FIXTURE_DIR;
@@ -14,13 +16,18 @@ describe('tronbox console', function () {
     expect(r.stdout).to.include('tronbox(development)>');
   });
 
-  it('prints output from a console.log evaluated in the REPL', () => {
+  it('prints console.log output and records it in the history file', () => {
+    const historyFile = path.join(cwd, '.console_history');
+    fs.removeSync(historyFile);
     const r = runCli(['console'], {
       cwd,
-      input: 'console.log("hello-from-repl")\n.exit\n'
+      isTTY: true,
+      input: 'console.log("hello-from-repl")\n'
     });
     expect(r.status, r.stderr).to.equal(0);
-    expect(r.stdout).to.include('hello-from-repl');
+    // A terminal REPL echoes its input, so `include` would match the echo.
+    expect(r.stdout).to.match(/^hello-from-repl$/m);
+    expect(fs.readFileSync(historyFile, 'utf-8')).to.include('console.log("hello-from-repl")');
   });
 
   it('reports a ReferenceError for an unknown identifier', () => {
