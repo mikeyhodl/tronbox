@@ -27,7 +27,7 @@ const Environment = {
       );
     }
 
-    let network_id = config.networks[config.network].network_id;
+    const network_id = config.networks[config.network].network_id;
 
     if (!network_id) {
       return callback(
@@ -40,11 +40,7 @@ const Environment = {
     const tronWrap = TronWrap();
 
     function detectNetworkId(done) {
-      if (network_id !== '*') {
-        return done(null, network_id);
-      }
-      network_id = '*';
-      config.networks[config.network].network_id = network_id;
+      // Reserved for future chain-id validation.
       done(null, network_id);
     }
 

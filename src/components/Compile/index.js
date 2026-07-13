@@ -4,6 +4,7 @@ const path = require('path');
 const CompileError = require('../../lib/errors/compileError');
 const { expect, findContracts } = require('../../lib/utils');
 const Config = require('../Config');
+const { preReleaseCompilerWarning } = require('./messages');
 
 // Most basic of the compile commands. Takes a hash of sources, where
 // the keys are file or module paths and the values are the bodies of
@@ -15,8 +16,6 @@ const Config = require('../Config');
 //   quiet: false,
 //   logger: console
 // }
-
-const preReleaseCompilerWarning = require('./messages').preReleaseCompilerWarning;
 
 const compile = function (sources, options, callback) {
   if (typeof options === 'function') {
@@ -128,7 +127,7 @@ const compile = function (sources, options, callback) {
           .map(function (warning) {
             return warning.formattedMessage;
           })
-          .join()
+          .join('')
       );
     }
   }
@@ -137,11 +136,11 @@ const compile = function (sources, options, callback) {
     options.logger.log('');
     return callback(
       new CompileError(
-        standardOutput.errors
+        errors
           .map(function (error) {
             return error.formattedMessage;
           })
-          .join()
+          .join('')
       )
     );
   }
@@ -247,6 +246,8 @@ function replaceLinkReferences(bytecode, linkReferences, libraryName) {
 // strict: Boolean. Return compiler warnings as errors. Defaults to false.
 compile.all = function (options, callback) {
   findContracts(options.contracts_directory, function (err, files) {
+    if (err) return callback(err);
+
     options.paths = files;
     compile.with_dependencies(options, callback);
   });

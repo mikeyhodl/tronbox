@@ -13,7 +13,10 @@ const options = {
 const commands = process.argv.slice(2);
 
 if (commands[0] === '--download-compiler' && commands[1]) {
-  downloader(commands[1], commands[2]);
+  downloader(commands[1], commands[2]).catch(err => {
+    console.error(chalk.red(chalk.bold('ERROR:'), err.message || err));
+    process.exit(1);
+  });
 } else {
   command.run(commands, options, function (err) {
     if (err) {

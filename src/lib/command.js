@@ -1,12 +1,16 @@
 const TronBoxError = require('./errors/tronBoxError');
 const yargs = require('yargs/yargs');
 const _ = require('lodash');
-const version = require('./version');
+const pkg = require('./pkg');
 
 function Command(commands) {
   this.commands = commands;
 
-  const args = yargs().detectLocale(false).exitProcess(false);
+  const args = yargs()
+    .scriptName(pkg.name)
+    .parserConfiguration({ 'duplicate-arguments-array': false })
+    .detectLocale(false)
+    .exitProcess(false);
 
   Object.keys(this.commands).forEach(command => {
     args.command(this.commands[command]);
@@ -15,8 +19,13 @@ function Command(commands) {
   this.args = args;
 }
 
-Command.prototype.getCommand = function (cmds, noAliases) {
-  const args = yargs().detectLocale(false).exitProcess(false).version(false).help(false);
+Command.prototype.getCommand = function (cmds) {
+  const args = yargs()
+    .parserConfiguration({ 'duplicate-arguments-array': false })
+    .detectLocale(false)
+    .exitProcess(false)
+    .version(false)
+    .help(false);
 
   Object.keys(this.commands).forEach(command => {
     args.command(this.commands[command]);
@@ -29,44 +38,13 @@ Command.prototype.getCommand = function (cmds, noAliases) {
   }
 
   const input = argv._[0];
-  let chosenCommand = null;
 
-  // If the command wasn't specified directly, go through a process
-  // for inferring the command.
-  if (this.commands[input]) {
-    chosenCommand = input;
-  } else if (noAliases !== true) {
-    let currentLength = 1;
-    const availableCommandNames = Object.keys(this.commands);
-
-    // Loop through each letter of the input until we find a command
-    // that uniquely matches.
-    while (currentLength <= input.length) {
-      // Gather all possible commands that match with the current length
-      const possibleCommands = availableCommandNames.filter(function (possibleCommand) {
-        return possibleCommand.substring(0, currentLength) === input.substring(0, currentLength);
-      });
-
-      // Did we find only one command that matches? If so, use that one.
-      if (possibleCommands.length === 1) {
-        chosenCommand = possibleCommands[0];
-        break;
-      }
-
-      currentLength += 1;
-    }
-  }
-
-  if (!chosenCommand) {
-    return null;
-  }
-
-  const command = this.commands[chosenCommand];
+  if (!this.commands[input]) return null;
 
   return {
-    name: chosenCommand,
+    name: input,
     argv: argv,
-    command: command
+    command: this.commands[input]
   };
 };
 
@@ -76,7 +54,7 @@ Command.prototype.run = function (command, options, callback) {
     options = {};
   }
 
-  const result = this.getCommand(command, typeof options.noAliases === 'boolean' ? options.noAliases : true);
+  const result = this.getCommand(command);
 
   if (!result) {
     return callback(
@@ -85,7 +63,7 @@ Command.prototype.run = function (command, options, callback) {
 
 Please use \`tronbox help\` to see a list of available commands.
 
-TronBox v${version.bundle}`
+TronBox v${pkg.version}`
       )
     );
   }

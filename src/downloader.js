@@ -14,7 +14,11 @@ async function downloader(compilerVersion, evm) {
   const dir = path.join(homedir(), '.tronbox', evm ? 'evm-solc' : 'solc');
   const soljsonPath = path.join(dir, `soljson_v${compilerVersion}.js`);
 
-  await fs.ensureDir(dir);
+  try {
+    await fs.ensureDir(dir);
+  } catch {
+    fatal(`Unable to create the compiler directory ${chalk.yellow(dir)}.`);
+  }
 
   let soljsonUrl = '';
   let expectedSha256 = '';

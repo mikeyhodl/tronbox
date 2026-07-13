@@ -31,7 +31,8 @@ describe('npm pack', function () {
     const r = spawnSync('npm', ['pack', '--pack-destination', tmpPack, '--json'], {
       cwd: REPO_ROOT,
       encoding: 'utf-8',
-      timeout: 180_000
+      timeout: 180_000,
+      shell: true
     });
     if (r.status !== 0) throw new Error(`npm pack failed: ${r.stderr}`);
     const jsonStart = r.stdout.indexOf('[');
@@ -96,7 +97,8 @@ describe('npm pack', function () {
       const install = spawnSync('npm', ['install', '--no-audit', '--no-fund', '--no-progress', tarball], {
         cwd: tmpInstall,
         encoding: 'utf-8',
-        timeout: 480_000
+        timeout: 480_000,
+        shell: true
       });
       if (install.status !== 0)
         throw new Error(`npm install of packed tarball failed: ${install.stderr}\n${install.stdout}`);
@@ -112,6 +114,7 @@ describe('npm pack', function () {
         cwd,
         encoding: 'utf-8',
         timeout,
+        shell: true,
         env: { ...process.env, ...env, FORCE_COLOR: '0' }
       });
     }

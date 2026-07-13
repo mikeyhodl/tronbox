@@ -56,7 +56,7 @@ FS.prototype.resolve = function (import_path, imported_from, callback) {
   // Resolver dispatches absolute paths here; profiler pre-resolves './' / '../'
   // imports to absolute paths via resolve_dependency_path before they re-enter.
   if (!path.isAbsolute(import_path)) {
-    throw new Error(`FS resolver received non-absolute path: ${import_path}`);
+    return callback(new Error(`"${import_path}" could not be resolved.`));
   }
   const workingDirectoryPath = path.resolve(this.working_directory);
   const relative = path.relative(workingDirectoryPath, import_path);

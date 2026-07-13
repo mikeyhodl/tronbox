@@ -1,12 +1,16 @@
 const path = require('path');
 
+// An import path that is absolute or contains a '..' segment (either separator).
+// Not a module/relative reference, and a path-traversal risk.
+function isAbsoluteOrTraversal(importPath) {
+  return path.isAbsolute(importPath) || /(^|[\\/])\.\.([\\/]|$)/.test(importPath);
+}
+
 // Validate that an import path looks like a well-formed npm reference:
 //   - unscoped:  "pkg/path/to/file.sol"           (at least one '/')
 //   - scoped:    "@scope/pkg/path/to/file.sol"    (at least two '/')
-// Reject absolute paths and any '..' segments — those aren't module references.
 function isValidNpmImportPath(importPath) {
-  if (path.isAbsolute(importPath)) return false;
-  if (importPath.split('/').includes('..')) return false;
+  if (isAbsoluteOrTraversal(importPath)) return false;
   if (importPath.startsWith('@')) {
     return (importPath.match(/\//g) || []).length >= 2;
   }
@@ -14,7 +18,9 @@ function isValidNpmImportPath(importPath) {
 }
 
 const INVALID_IMPORT_MESSAGE = importPath =>
-  `Invalid import "${importPath}". Local files must start with './' or '../'; ` +
-  `npm imports must look like 'package/path' or '@scope/package/path'.`;
+  isAbsoluteOrTraversal(importPath)
+    ? `Invalid import "${importPath}". Import paths may not be absolute or contain '..' segments.`
+    : `Invalid import "${importPath}". Local files must start with './' or '../'; ` +
+      `npm imports must look like 'package/path' or '@scope/package/path'.`;
 
 module.exports = { isValidNpmImportPath, INVALID_IMPORT_MESSAGE };

@@ -1,5 +1,5 @@
 const path = require('path');
-const version = require('../version');
+const pkg = require('../pkg');
 const describe = 'Run contract tests written in JavaScript';
 
 const command = {
@@ -8,7 +8,7 @@ const command = {
   builder: yargs => {
     yargs
       .usage(
-        `TronBox v${version.bundle}\n\n${describe}\n
+        `TronBox v${pkg.version}\n\n${describe}\n
 Usage: $0 test [<files...>] [--file <file>]
                     [--network <network>] [--compile-all] [--evm]`
       )
@@ -45,15 +45,14 @@ Usage: $0 test [<files...>] [--file <file>]
   run: function (options, done) {
     const OS = require('os');
     const dir = require('node-dir');
-    const tmp = require('tmp');
     const Config = require('../../components/Config');
     const Artifactor = require('../../components/Artifactor');
     const Test = require('../test');
-    const fs = require('fs');
-    const fsExtra = require('fs-extra');
+    const fs = require('fs-extra');
     const Environment = require('../environment');
     const TronWrap = require('../../components/TronWrap');
-    const logErrorAndExit = require('../../components/TronWrap').logErrorAndExit;
+
+    const { logErrorAndExit } = TronWrap;
 
     const config = Config.detect(options);
 
@@ -74,7 +73,7 @@ Usage: $0 test [<files...>] [--file <file>]
     if (options.file) {
       files = [options.file];
     } else if (options._.length > 0) {
-      Array.prototype.push.apply(files, options._);
+      Array.prototype.push.apply(files, options._.map(String));
     }
 
     function getFiles(callback) {
@@ -85,6 +84,14 @@ Usage: $0 test [<files...>] [--file <file>]
           const relative = path.relative(workingDirectoryPath, resolvedPath);
           if (relative.startsWith('..') || path.isAbsolute(relative)) {
             return callback(new Error(`${file} is outside the project directory.`));
+          }
+          if (!file.match(config.test_file_extension_regexp)) {
+            return callback(
+              new Error(`${file} is not a JavaScript test file. tronbox runs tests written in JavaScript.`)
+            );
+          }
+          if (!fs.existsSync(resolvedPath)) {
+            return callback(new Error(`${file} does not exist.`));
           }
         }
         return callback(null, files);
@@ -100,11 +107,24 @@ Usage: $0 test [<files...>] [--file <file>]
         return file.match(config.test_file_extension_regexp) != null;
       });
 
-      tmp.dir({ unsafeCleanup: true, prefix: 'test-' }, function (err, temporaryDirectory, removeCallback) {
+      if (!config.networks[config.network]) {
+        return done(new Error('No development or test environment is configured in your project configuration.'));
+      }
+
+      Environment.detect(config, function (err) {
         if (err) return done(err);
 
+        let tmpDir;
+        try {
+          tmpDir = fs.mkdtempSync(path.join(OS.tmpdir(), 'tronbox-test-'));
+        } catch (e) {
+          return done(e);
+        }
+
         function cleanup(...args) {
-          removeCallback();
+          try {
+            fs.removeSync(tmpDir);
+          } catch (e) {}
           done(...args);
         }
 
@@ -113,39 +133,30 @@ Usage: $0 test [<files...>] [--file <file>]
 
           // Set a new artifactor; don't rely on the one created by Environments.
           // TODO: Make the test artifactor configurable.
-          config.artifactor = new Artifactor(temporaryDirectory);
+          config.artifactor = new Artifactor(tmpDir);
 
           Test.run(
             config.with({
               test_files: files,
-              contracts_build_directory: temporaryDirectory,
+              contracts_build_directory: tmpDir,
               _allowExternalContractsBuildDirectory: true
             }),
             cleanup
           );
         }
 
-        const environmentCallback = function (err) {
-          if (err) return done(err);
-          // Copy all the built files over to a temporary directory, because we
-          // don't want to save any tests artifacts. Only do this if the build directory
-          // exists.
-          fs.stat(config.contracts_build_directory, function (err) {
-            if (err) return run();
+        // Copy all the built files over to a temporary directory, because we
+        // don't want to save any tests artifacts. Only do this if the build directory
+        // exists.
+        fs.stat(config.contracts_build_directory, function (err) {
+          if (err) return run();
 
-            fsExtra.copy(config.contracts_build_directory, temporaryDirectory, function (err) {
-              if (err) return done(err);
+          fs.copy(config.contracts_build_directory, tmpDir, function (err) {
+            if (err) return cleanup(err);
 
-              run();
-            });
+            run();
           });
-        };
-
-        if (config.networks[config.network]) {
-          Environment.detect(config, environmentCallback);
-        } else {
-          throw new Error('No development or test environment is configured in your project configuration.');
-        }
+        });
       });
     });
   }

@@ -1,4 +1,4 @@
-const version = require('../version');
+const pkg = require('../pkg');
 const describe = 'Flattens and prints contracts and their dependencies';
 
 const command = {
@@ -7,7 +7,7 @@ const command = {
   builder: yargs => {
     yargs
       .usage(
-        `TronBox v${version.bundle}\n\n${describe}\n
+        `TronBox v${pkg.version}\n\n${describe}\n
 Usage: $0 flatten <files...>`
       )
       .version(false)
@@ -30,7 +30,7 @@ Usage: $0 flatten <files...>`
 
     if (!filePaths.length) {
       console.error('Usage: tronbox flatten <files...>\n');
-      done();
+      done(1);
       return;
     }
 

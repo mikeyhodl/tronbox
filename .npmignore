@@ -13,6 +13,7 @@ node_modules
 
 # Project files not needed in published package
 /assets
+/logs
 /scripts
 /src
 /test
@@ -22,3 +23,6 @@ node_modules
 eslint.config.js
 tronbox.dev
 CONTRIBUTING.md
+
+# Packed tarballs
+*.tgz

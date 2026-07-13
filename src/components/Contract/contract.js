@@ -1,24 +1,12 @@
 const { ethers } = require('ethers');
 const TronWrap = require('../TronWrap');
-const { constants } = require('../TronWrap');
-const BigNumber = require('bignumber.js');
+const NotDeployedError = require('../../lib/errors/notDeployedError');
+
+const { constants } = TronWrap;
 
 let tronWrap;
 
 const Utils = {
-  is_object: function (val) {
-    return typeof val === 'object' && !Array.isArray(val);
-  },
-  is_big_number: function (val) {
-    if (typeof val !== 'object') return false;
-
-    try {
-      new BigNumber(val);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  },
   merge: function () {
     const merged = {};
     const args = Array.prototype.slice.call(arguments);
@@ -77,19 +65,18 @@ function toCamelCase(str) {
   return str.replace(/_([a-z])/g, g => g[1].toUpperCase());
 }
 
-function filterEnergyParameter(args) {
-  const deployParameters = Object.keys(constants.deployParameters);
-  const lastArg = args[args.length - 1];
-  if (typeof lastArg !== 'object' || Array.isArray(lastArg)) return [args, {}];
-  args.pop();
-  const res = {};
+function filterEnergyParameter(rawArgs, whitelist) {
+  const lastArg = rawArgs[rawArgs.length - 1];
+  if (typeof lastArg !== 'object' || lastArg === null || Array.isArray(lastArg)) return [rawArgs, {}];
+  const args = rawArgs.slice(0, -1);
+  const options = {};
   Object.keys(lastArg).forEach(property => {
     const camelCased = toCamelCase(property);
-    if (~deployParameters.indexOf(camelCased)) {
-      res[camelCased] = lastArg[property];
-    }
+    if (property !== camelCased && camelCased in lastArg) return;
+    if (whitelist && !~whitelist.indexOf(camelCased)) return;
+    options[camelCased] = lastArg[property];
   });
-  return [args, res];
+  return [args, options];
 }
 
 Contract._static_methods = {
@@ -99,10 +86,10 @@ Contract._static_methods = {
     }
   },
 
-  new: function () {
+  new: function (...rawArgs) {
     const self = this;
 
-    const [args, params] = filterEnergyParameter(Array.prototype.slice.call(arguments));
+    const [args, params] = filterEnergyParameter(rawArgs, Object.keys(constants.deployParameters));
 
     if (!this.bytecode) {
       throw new Error(this._json.contractName + " error: contract binary not set. Can't deploy new instance.");
@@ -178,10 +165,13 @@ Contract._static_methods = {
           reject(err);
           return;
         }
-        self.at(res.address).then(newContract => {
-          newContract.transactionHash = res.transactionHash;
-          accept(newContract);
-        });
+        self
+          .at(res.address)
+          .then(newContract => {
+            newContract.transactionHash = res.transactionHash;
+            accept(newContract);
+          })
+          .catch(reject);
       }
     });
   },
@@ -196,18 +186,10 @@ Contract._static_methods = {
     return newContract.deployed();
   },
 
-  call: function (methodName, ...args) {
+  call: function (methodName, ...rawArgs) {
     const self = this;
-    let methodArgs = {};
 
-    const lastArg = args[args.length - 1];
-    if (!Array.isArray(lastArg) && typeof lastArg === 'object') {
-      methodArgs = args.pop();
-    }
-
-    if (!methodArgs.call_value) {
-      methodArgs.call_value = 0;
-    }
+    let [args, methodArgs] = filterEnergyParameter(rawArgs);
 
     if (args.length === 1 && Array.isArray(args[0])) {
       try {
@@ -248,7 +230,7 @@ Contract._static_methods = {
     return new Promise(function (accept, reject) {
       // If we found the network but it's not deployed
       if (!self.isDeployed()) {
-        throw new Error(self.contractName + ' has not been deployed to detected network');
+        throw new NotDeployedError(self.contractName);
       }
 
       let getContract;
@@ -261,14 +243,13 @@ Contract._static_methods = {
       }
       getContract
         .then(res => {
-          const noCodeMsg = `${self.contractName} has not been deployed to detected network; no code at address ${self.address}`;
           if (tronWrap._ethers) {
             if (res === '0x') {
-              throw new Error(noCodeMsg);
+              throw new NotDeployedError(self.contractName, self.address);
             }
           } else {
             if (!res.contract_address) {
-              throw new Error(noCodeMsg);
+              throw new NotDeployedError(self.contractName, self.address);
             }
           }
           const abi = self.abi || [];
@@ -576,7 +557,7 @@ Contract._properties = {
     get: function () {
       const transactionHash = this.network.transactionHash;
 
-      if (transactionHash === null) {
+      if (!transactionHash) {
         throw new Error('Could not find transaction hash for ' + this.contractName);
       }
 

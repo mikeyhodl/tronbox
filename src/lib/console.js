@@ -9,9 +9,10 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const EventEmitter = require('events');
-const inherits = require('util').inherits;
+const { inherits } = require('util');
 const chalk = require('chalk');
-const logErrorAndExit = require('../components/TronWrap').logErrorAndExit;
+
+const { logErrorAndExit } = TronWrap;
 
 inherits(Console, EventEmitter);
 
@@ -156,7 +157,7 @@ Console.prototype.interpret = function (cmd, context, filename, callback) {
     return callback();
   }
 
-  const cmdRes = this.command.getCommand(cmd, this.options.noAliases);
+  const cmdRes = this.command.getCommand(cmd);
   if (cmdRes != null) {
     if (cmdRes.name === 'help') {
       return self.command.run(cmd, this.options, callback);
@@ -169,15 +170,11 @@ Console.prototype.interpret = function (cmd, context, filename, callback) {
     const excludeKeys = ['_', '$0', 'f', 'evm', 'network'];
     const args = [...cmdRes.argv._];
     Object.keys(cmdRes.argv)
-      .filter(key => !excludeKeys.includes(key))
+      .filter(key => !excludeKeys.includes(key) && !/[A-Z]/.test(key))
       .forEach(key => {
         const value = cmdRes.argv[key];
-        let arg = value;
-        if (Array.isArray(value)) {
-          arg = value[value.length - 1];
-        }
         args.push(`--${key}`);
-        if (value !== true) args.push(`${arg}`);
+        if (value !== true) args.push(`${value}`);
       });
     args.push('--network');
     args.push(`${this.options.network}`);
@@ -197,7 +194,7 @@ Console.prototype.interpret = function (cmd, context, filename, callback) {
     }
 
     try {
-      const spawnedProcess = spawn(cmdRes.argv['$0'], args, {
+      const spawnedProcess = spawn(process.execPath, [cmdRes.argv['$0'], ...args], {
         env: { ...process.env, FORCE_COLOR: '1' },
         encoding: 'utf8'
       });

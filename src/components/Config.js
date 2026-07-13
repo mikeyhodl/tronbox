@@ -112,7 +112,7 @@ function Config() {
       }
     },
     test_file_extension_regexp: function () {
-      return /.*\.(js|es|es6|jsx|sol)$/;
+      return /.*\.(js|es|es6|jsx)$/;
     },
     network_id: {
       get: function () {

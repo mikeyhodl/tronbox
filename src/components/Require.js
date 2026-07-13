@@ -6,15 +6,14 @@ const { expect } = require('../lib/utils');
 const Config = require('./Config');
 
 // options.file: path to file to execute. Must be a module that exports a function.
-// options.args: arguments passed to the exported function within file. If a callback
-//   is not included in args, exported function is treated as synchronous.
 // options.context: Object containing any global variables you'd like set when this
 //   function is run.
+// options.resolver: Resolver instance exposed to the file as the `artifacts` global.
 const Require = {
   file: options => {
-    const file = path.resolve(options.file);
-
     expect.options(options, ['file']);
+
+    const file = path.resolve(options.file);
 
     options = Config.default().with(options);
 

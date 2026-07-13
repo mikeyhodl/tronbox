@@ -1,4 +1,4 @@
-const version = require('../version');
+const pkg = require('../pkg');
 const describe = 'Initialize new TronBox project';
 
 const command = {
@@ -7,7 +7,7 @@ const command = {
   builder: yargs => {
     yargs
       .usage(
-        `TronBox v${version.bundle}\n\n${describe}\n
+        `TronBox v${pkg.version}\n\n${describe}\n
 Usage: $0 init`
       )
       .version(false)

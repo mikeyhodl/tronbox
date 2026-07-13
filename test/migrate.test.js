@@ -1,6 +1,7 @@
 // Requires TRE running on http://127.0.0.1:9090.
 
 const { expect } = require('chai');
+const { TronWeb } = require('tronweb');
 const path = require('path');
 const fs = require('fs-extra');
 const { runCli, artifact, FIXTURE_DIR } = require('./helpers');
@@ -28,6 +29,37 @@ describe('tronbox migrate', function () {
       const r = runCli(['migrate'], { cwd });
       expect(r.status, r.stderr).to.equal(0);
       expect(r.stdout).to.include('Network up to date.');
+      expect(r.stdout).to.not.include('Running migration:');
+    });
+  });
+
+  describe('stale recorded address', () => {
+    const setRecordedAddress = address => {
+      const file = artifact(buildDir, 'Migrations');
+      const json = fs.readJsonSync(file);
+      json.networks['9'].address = address;
+      fs.writeJsonSync(file, json);
+    };
+
+    it('redeploys when the recorded contract no longer exists on chain', () => {
+      fs.removeSync(buildDir);
+      expect(runCli(['migrate'], { cwd }).status).to.equal(0);
+
+      setRecordedAddress(TronWeb.address.toHex(TronWeb.createRandom().address));
+
+      const r = runCli(['migrate'], { cwd });
+      expect(r.status, r.stderr).to.equal(0);
+      expect(r.stdout).to.include('Running migration: 1_initial_migration.js');
+    });
+
+    it('aborts instead of silently re-running when the recorded address is unreadable', () => {
+      fs.removeSync(buildDir);
+      expect(runCli(['migrate'], { cwd }).status).to.equal(0);
+
+      setRecordedAddress('41dead');
+
+      const r = runCli(['migrate'], { cwd });
+      expect(r.status).to.not.equal(0);
       expect(r.stdout).to.not.include('Running migration:');
     });
   });

@@ -90,7 +90,7 @@ NPM.prototype.resolve = function (import_path, imported_from, callback) {
 // that when this path is evaluated this source is used again.
 NPM.prototype.resolve_dependency_path = function (import_path, dependency_path) {
   const dirname = path.dirname(import_path);
-  return path.join(dirname, dependency_path);
+  return path.join(dirname, dependency_path).replace(/\\/g, '/');
 };
 
 module.exports = NPM;

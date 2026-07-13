@@ -4,7 +4,7 @@ const path = require('path');
 const chalk = require('chalk');
 const fs = require('fs-extra');
 const homedir = require('homedir');
-const pkg = require('../../package');
+const pkg = require('../lib/pkg');
 
 const maxVersion = '0.8.26';
 
@@ -105,7 +105,7 @@ You are using version ${chalk.yellow(compilerVersion)}, which is not supported.`
         args.push('--evm');
       }
 
-      const result = execFileSync(cliPath, args, {
+      const result = execFileSync(process.execPath, [cliPath, ...args], {
         env: { ...process.env, FORCE_COLOR: '1' },
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'pipe']
