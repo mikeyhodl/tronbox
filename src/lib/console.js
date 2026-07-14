@@ -194,7 +194,7 @@ Console.prototype.interpret = function (cmd, context, filename, callback) {
     }
 
     try {
-      const spawnedProcess = spawn(process.execPath, [cmdRes.argv['$0'], ...args], {
+      const spawnedProcess = spawn(process.execPath, [process.argv[1], ...args], {
         env: { ...process.env, FORCE_COLOR: '1' },
         encoding: 'utf8'
       });
