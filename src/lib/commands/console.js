@@ -1,4 +1,4 @@
-const version = require('../version');
+const pkg = require('../pkg');
 const describe = 'Run a console with contract abstractions and commands available';
 
 const command = {
@@ -7,7 +7,7 @@ const command = {
   builder: yargs => {
     yargs
       .usage(
-        `TronBox v${version.bundle}\n\n${describe}\n
+        `TronBox v${pkg.version}\n\n${describe}\n
 Usage: $0 console [--network <network>] [--evm]`
       )
       .version(false)
@@ -31,9 +31,9 @@ Usage: $0 console [--network <network>] [--evm]`
     const Config = require('../../components/Config');
     const Console = require('../console');
     const Environment = require('../environment');
-
     const TronWrap = require('../../components/TronWrap');
-    const logErrorAndExit = require('../../components/TronWrap').logErrorAndExit;
+
+    const { logErrorAndExit } = TronWrap;
 
     const config = Config.detect(options);
 
@@ -64,12 +64,7 @@ Usage: $0 console [--network <network>] [--evm]`
     Environment.detect(config, function (err) {
       if (err) return done(err);
 
-      const c = new Console(
-        console_commands,
-        config.with({
-          noAliases: true
-        })
-      );
+      const c = new Console(console_commands, config.with({}));
       c.start(done);
     });
   }

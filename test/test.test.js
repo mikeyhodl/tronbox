@@ -42,6 +42,22 @@ describe('tronbox test', function () {
     });
   });
 
+  describe('compile-all', () => {
+    before(() => {
+      runCli(['compile'], { cwd });
+
+      const r = runCli(['test'], { cwd });
+      expect(r.stdout, r.stderr).to.include('Everything is up to date');
+    });
+
+    it('forces a recompile even when the build is up to date', () => {
+      const r = runCli(['test', '--compile-all'], { cwd });
+      expect(r.status, r.stderr).to.equal(0);
+      expect(r.stdout).to.include('Compiling ./contracts/Empty.sol');
+      expect(r.stdout).to.not.include('Everything is up to date');
+    });
+  });
+
   describe('scenarios', () => {
     describe('contracts_advanced', () => {
       const env = {

@@ -2,7 +2,7 @@ const repl = require('repl');
 const { expect } = require('./utils');
 const async = require('async');
 const EventEmitter = require('events');
-const inherits = require('util').inherits;
+const { inherits } = require('util');
 
 inherits(ReplManager, EventEmitter);
 

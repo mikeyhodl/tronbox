@@ -1,4 +1,4 @@
-const findContracts = require('./contract-sources');
+const findContracts = require('./findContracts');
 const expect = require('./expect');
 
 module.exports = {

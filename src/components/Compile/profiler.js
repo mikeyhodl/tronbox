@@ -4,11 +4,21 @@
 const path = require('path');
 const async = require('async');
 const fs = require('fs');
-const Graph = require('graphlib').Graph;
-const Parser = require('./parser');
+const { Graph } = require('graphlib');
+const parser = require('@solidity-parser/parser');
 const { expect, findContracts } = require('../../lib/utils');
 const CompileError = require('../../lib/errors/compileError');
 const { INVALID_IMPORT_MESSAGE } = require('../Resolver/validate');
+
+function parseImports(body) {
+  try {
+    const ast = parser.parse(body, { tolerant: true });
+    return (ast.children || [])
+      .filter(node => node && node.type === 'ImportDirective' && node.path)
+      .map(node => node.path);
+  } catch {}
+  return [];
+}
 
 module.exports = {
   updated: function (options, callback) {
@@ -286,7 +296,7 @@ module.exports = {
           // Add the contract to the depends graph.
           dependsGraph.setNode(resolved_path, resolved_body);
 
-          let imports = Parser.parseImports(resolved_body, resolver.options);
+          let imports = parseImports(resolved_body);
 
           // Reject user-written absolute imports before any path normalization
           // turns explicitly-relative imports into absolute paths internally.

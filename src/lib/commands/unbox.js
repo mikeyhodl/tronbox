@@ -18,11 +18,10 @@ function normalizeURL(url) {
   }
 
   if (url.indexOf('/') === -1) {
-    // repo name only
-    if (url.indexOf('-box') === -1) {
-      url = url + '-box';
-    }
-    return 'https://github.com/tronsuper/' + url;
+    // repo name only, optionally with a #ref
+    const [name, ref] = url.split('#');
+    const repo = name.indexOf('-box') === -1 ? name + '-box' : name;
+    return 'https://github.com/tronsuper/' + repo + (ref ? '#' + ref : '');
   }
 
   throw new Error('Box specified in invalid format');
@@ -52,7 +51,7 @@ function formatCommands(commands) {
   });
 }
 
-const version = require('../version');
+const pkg = require('../pkg');
 const describe = 'Download a pre-built TronBox Box template';
 
 const command = {
@@ -61,7 +60,7 @@ const command = {
   builder: yargs => {
     yargs
       .usage(
-        `TronBox v${version.bundle}\n\n${describe}\n
+        `TronBox v${pkg.version}\n\n${describe}\n
 Usage: $0 unbox [<name>] [--quiet]`
       )
       .version(false)
@@ -72,13 +71,13 @@ Usage: $0 unbox [<name>] [--quiet]`
         }
       })
       .positional('name', {
-        describe: 'Box name, GitHub username/repo, or a full git repo URL. If omitted, downloads the default box.',
+        describe: 'Box name, user/repo, or GitHub URL, optionally with #ref. Omit for the default box.',
         type: 'string'
       })
       .example('$0 unbox', 'Download the default TronBox Box')
-      .example('$0 unbox metacoin', 'Download the "metacoin" TronBox Box')
-      .example('$0 unbox tronsuper/bare-box', 'Download a TronBox Box from a GitHub username/repository')
-      .example('$0 unbox https://gitlab.com/user/my-box', 'Download a TronBox Box using its full Git repository URL')
+      .example('$0 unbox metacoin', 'Download a TronBox Box by name')
+      .example('$0 unbox user/my-box#v1.0', 'Download a TronBox Box by GitHub username/repo with #ref')
+      .example('$0 unbox https://github.com/user/my-box', 'Download a TronBox Box from a full GitHub URL')
       .group(['quiet', 'help'], 'Options:');
   },
   run: function (options, done) {

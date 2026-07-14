@@ -4,7 +4,7 @@
 const { expect } = require('chai');
 const path = require('path');
 const fs = require('fs-extra');
-const { runCli, makeTmp, removeTmp } = require('./helpers');
+const { runCli, makeLocalTmp, removeTmp } = require('./helpers');
 
 describe('tronbox unbox', function () {
   this.timeout(300_000);
@@ -12,7 +12,7 @@ describe('tronbox unbox', function () {
   describe('default box', () => {
     let tmp;
     before(() => {
-      tmp = makeTmp();
+      tmp = makeLocalTmp();
       const r = runCli(['unbox'], { cwd: tmp });
       expect(r.status, r.stderr).to.equal(0);
       expect(r.stdout).to.include('Unbox successful');
@@ -37,13 +37,22 @@ describe('tronbox unbox', function () {
 
   describe('metacoin-box', () => {
     let tmp;
+    let cliTmpDir;
+    let env;
     before(() => {
-      tmp = makeTmp();
-      const r = runCli(['unbox', 'metacoin-box'], { cwd: tmp });
+      tmp = makeLocalTmp();
+      cliTmpDir = makeLocalTmp();
+      env = { TMPDIR: cliTmpDir, TMP: cliTmpDir, TEMP: cliTmpDir };
+      const r = runCli(['unbox', 'metacoin-box'], { cwd: tmp, env });
       expect(r.status, r.stderr).to.equal(0);
       expect(r.stdout).to.include('Unbox successful');
     });
-    after(() => removeTmp(tmp));
+    after(() => {
+      const leaked = cliTmpDir ? fs.readdirSync(cliTmpDir).filter(n => n.startsWith('tronbox-')) : [];
+      expect(leaked, 'leaked temp dirs').to.deep.equal([]);
+      removeTmp(tmp);
+      removeTmp(cliTmpDir);
+    });
 
     it('installs npm dependencies and writes contracts/MetaCoin.sol', () => {
       expect(fs.existsSync(path.join(tmp, 'package.json'))).to.equal(true);
@@ -52,7 +61,7 @@ describe('tronbox unbox', function () {
     });
 
     it('runs `tronbox test` successfully against the development network', () => {
-      const r = runCli(['test'], { cwd: tmp });
+      const r = runCli(['test'], { cwd: tmp, env });
       expect(r.status, r.stderr).to.equal(0);
       expect(r.stdout).to.include("Using network 'development'");
       expect(r.stdout).to.include('Contract: MetaCoin');
@@ -61,9 +70,23 @@ describe('tronbox unbox', function () {
     });
   });
 
+  describe('quiet', () => {
+    it('suppresses stdout but still lays down the project', () => {
+      const tmp = makeLocalTmp();
+      try {
+        const r = runCli(['unbox', '--quiet'], { cwd: tmp });
+        expect(r.status, r.stderr).to.equal(0);
+        expect(r.stdout).to.equal('');
+        expect(fs.existsSync(path.join(tmp, 'tronbox.js'))).to.equal(true);
+      } finally {
+        removeTmp(tmp);
+      }
+    });
+  });
+
   describe('errors', () => {
     it('rejects a malformed box specifier', () => {
-      const tmp = makeTmp();
+      const tmp = makeLocalTmp();
       try {
         // Three slashes, not a URL or `org/repo`, not a bare name — the normalizer rejects it.
         const r = runCli(['unbox', 'a/b/c'], { cwd: tmp });

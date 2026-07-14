@@ -12,8 +12,8 @@ describe('tronbox CLI', function () {
       // Help goes to stderr (yargs default).
       expect(r.stderr).to.include('TronBox v');
       expect(r.stderr).to.include('Usage: tronbox <command> [options]');
-      ['init', 'compile', 'migrate', 'test', 'console', 'flatten', 'version'].forEach(c => {
-        expect(r.stderr).to.include(c);
+      ['init', 'compile', 'migrate', 'deploy', 'test', 'console', 'flatten', 'unbox', 'version'].forEach(c => {
+        expect(r.stderr).to.include(`tronbox ${c}`);
       });
     };
 
@@ -31,7 +31,9 @@ describe('tronbox CLI', function () {
       ['deploy', 'Run migrations to deploy contracts'],
       ['test', 'Run contract tests written in JavaScript'],
       ['console', 'Run a console with contract abstractions'],
-      ['flatten', 'Flattens and prints contracts and their dependencies']
+      ['flatten', 'Flattens and prints contracts and their dependencies'],
+      ['unbox', 'Download a pre-built TronBox Box template'],
+      ['version', 'Show version information']
     ];
     cases.forEach(([cmd, banner]) => {
       it(`${cmd} --help prints help`, () => {
@@ -39,8 +41,7 @@ describe('tronbox CLI', function () {
         expect(r.status, r.stderr).to.equal(0);
         expect(r.stdout).to.include('TronBox v');
         expect(r.stdout).to.include(banner);
-        expect(r.stdout).to.include(`Usage: tronbox`);
-        expect(r.stdout).to.include(cmd);
+        expect(r.stdout).to.include(`Usage: tronbox ${cmd}`);
       });
     });
   });

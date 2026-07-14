@@ -1,7 +1,7 @@
 const fs = require('fs-extra');
+const os = require('os');
 const path = require('path');
 const axios = require('axios');
-const tmp = require('tmp');
 const { spawnSync } = require('child_process');
 const ghdownload = require('./download');
 
@@ -53,13 +53,7 @@ function verifyURL(url) {
 }
 
 function setupTempDirectory() {
-  return new Promise(function (accept, reject) {
-    tmp.dir({ unsafeCleanup: true }, function (err, dir, cleanupCallback) {
-      if (err) return reject(err);
-
-      accept({ dir: path.join(dir, 'box'), cleanupCallback });
-    });
-  });
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'tronbox-box-'));
 }
 
 function fetchRepository(url, dir) {

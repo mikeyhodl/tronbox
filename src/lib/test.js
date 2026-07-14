@@ -11,8 +11,6 @@ const Profiler = require('../components/Compile/profiler');
 const TronWrap = require('../components/TronWrap');
 const waitForTransactionReceipt = require('../components/waitForTransactionReceipt');
 
-chai.use(require('./assertions'));
-
 const Test = {
   run: function (options, callback) {
     const self = this;
@@ -32,26 +30,18 @@ const Test = {
       return path.resolve(test_file);
     });
 
-    // Output looks like this during tests: https://gist.github.com/tcoulter/1988349d1ec65ce6b958
-    const warn = config.logger.warn;
-    config.logger.warn = function (message) {
-      if (message !== 'cannot find event for log' && warn) {
-        warn.apply(console, arguments);
-      }
-    };
-
     const mocha = this.createMocha(config);
 
     const js_tests = config.test_files.filter(function (file) {
       return path.extname(file) !== '.sol';
     });
 
+    // Reserved for future `.sol` tests; excluded by `test_file_extension_regexp`.
     const sol_tests = config.test_files.filter(function (file) {
       return path.extname(file) === '.sol';
     });
 
     // Add JavaScript tests because there's nothing we need to do with them.
-    // Solidity tests will be handled later.
     js_tests.forEach(function (file) {
       // There's an idiosyncrasy in Mocha where the same file can't be run twice
       // unless we delete the `require` cache.
@@ -92,7 +82,6 @@ const Test = {
       })
       .then(function () {
         mocha.run(function (failures) {
-          config.logger.warn = warn;
           callback(failures);
         });
       })

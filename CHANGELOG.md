@@ -1,3 +1,43 @@
+**4.9.0**
+
+### Bug Fixes
+
+- Fixed `compile` not surfacing errors raised while discovering source files
+- Fixed `compile` crashing on dependency-resolution failures instead of reporting them
+- Fixed solc warnings leaking into the thrown compilation error
+- Fixed import resolution by normalizing path separators
+- Fixed `migrate` silently re-running every migration when the on-chain migration counter can't be read; it now surfaces the error
+- Fixed `migrate` ignoring a zero-valued `--from` or `--to`
+- Fixed trailing constructor-argument handling when deploying
+- Fixed `deploy` not surfacing an error when the post-deploy lookup fails or the transaction hash is missing
+- Fixed the per-deployment `userFeePercentage` option being ignored
+- Fixed `test` not reporting a clear error for missing test files
+- Fixed `test` treating non-JavaScript files as tests
+- Fixed duplicate camelCase flags when forwarding `console` commands
+- Fixed repeated CLI flags not being treated as last-wins
+- Fixed `flatten` exiting zero when given no files
+- Fixed `unbox` box-name resolution and refreshed its help
+
+### Improvements
+
+- Faster `flatten`: each source is resolved and parsed once
+- Parsed source files with `@solidity-parser/parser` to scan imports
+
+### Security
+
+- Rejected path traversal in Solidity import paths
+
+### Dependencies
+
+- Upgraded `ethers` to 6.17.0
+- Upgraded `yauzl` to 3.4.0
+- Added a `ws` 8.21.0 override
+
+### Removals
+
+- Removed `glob` dependency
+- Removed `tmp` dependency (temp directories now use Node's native `mkdtemp`)
+
 **4.8.0**
 
 ### Bug Fixes

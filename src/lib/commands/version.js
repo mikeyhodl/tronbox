@@ -1,5 +1,5 @@
 const { maxVersion } = require('../../components/TronSolc');
-const version = require('../version');
+const pkg = require('../pkg');
 const describe = 'Show version information';
 
 const command = {
@@ -8,7 +8,7 @@ const command = {
   builder: yargs => {
     yargs
       .usage(
-        `TronBox v${version.bundle}\n\n${describe}\n
+        `TronBox v${pkg.version}\n\n${describe}\n
 Usage: $0 version`
       )
       .version(false)
@@ -16,17 +16,8 @@ Usage: $0 version`
   },
   run: function (options, done) {
     process.env.CURRENT = 'version';
-    const version = require('../version');
 
-    let bundle_version;
-
-    if (version.bundle) {
-      bundle_version = 'v' + version.bundle;
-    } else {
-      bundle_version = '(unbundled)';
-    }
-
-    options.logger.log('TronBox ' + bundle_version);
+    options.logger.log('TronBox v' + pkg.version);
     options.logger.log('Solidity v' + maxVersion + ' (tron-solc)');
 
     done();

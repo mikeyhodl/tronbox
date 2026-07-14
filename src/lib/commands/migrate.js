@@ -1,4 +1,4 @@
-const version = require('../version');
+const pkg = require('../pkg');
 const describe = 'Run migrations to deploy contracts';
 
 const command = {
@@ -7,7 +7,7 @@ const command = {
   builder: (yargs, cmd = 'migrate') => {
     yargs
       .usage(
-        `TronBox v${version.bundle}\n\n${describe}\n
+        `TronBox v${pkg.version}\n\n${describe}\n
 Usage: $0 ${cmd} [--network <network>]
                ${' '.repeat(cmd.length)} [--reset] [--from <number>] [--to <number>]
                ${' '.repeat(cmd.length)} [--compile-all] [--evm] [--quiet]`
@@ -57,8 +57,8 @@ Usage: $0 ${cmd} [--network <network>]
     const Migrate = require('../../components/Migrate');
     const Environment = require('../environment');
     const TronWrap = require('../../components/TronWrap');
-    const { dlog } = require('../../components/TronWrap');
-    const logErrorAndExit = require('../../components/TronWrap').logErrorAndExit;
+
+    const { dlog, logErrorAndExit } = TronWrap;
 
     if (options.quiet || options.silent) {
       options.logger = {
@@ -80,8 +80,8 @@ Usage: $0 ${cmd} [--network <network>]
     }
 
     function runMigrations(callback) {
-      if (options.f) {
-        Migrate.runFrom(options.f, config, done);
+      if (Number.isFinite(options.f)) {
+        Migrate.runFrom(Math.max(0, options.f), config, done);
       } else {
         Migrate.needsMigrating(config, function (err, needsMigrating) {
           if (err) return callback(err);

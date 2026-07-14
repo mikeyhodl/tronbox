@@ -4,7 +4,7 @@ const path = require('path');
 const chalk = require('chalk');
 const findUp = require('find-up');
 const { prompt } = require('enquirer');
-const packageJson = require('../../../package.json');
+const pkg = require('../../lib/pkg');
 
 const ACTION = {
   CREATE_JAVASCRIPT_PROJECT_ACTION: {
@@ -37,7 +37,7 @@ function printAsciiLogo() {
 }
 
 function printWelcomeMessage() {
-  console.info(chalk.cyan(`Welcome to TronBox v${packageJson.version}! Learn more at ${packageJson.homepage}`));
+  console.info(chalk.cyan(`Welcome to TronBox v${pkg.version}! Learn more at ${pkg.homepage}`));
   console.info();
 }
 
@@ -54,7 +54,7 @@ function showStarOnGitHubMessage() {
   console.info();
   console.info(chalk.cyan("If you're enjoying TronBox, please give us a star on GitHub!"));
   console.info();
-  console.info(chalk.cyan(`   ${packageJson.repository.url.slice(0, -4)}`));
+  console.info(chalk.cyan(`   ${pkg.repository.url.slice(0, -4)}`));
 }
 
 const getAction = async () => {

@@ -6,13 +6,14 @@ const path = require('path');
 const REPO_ROOT = path.resolve(__dirname, '..');
 const TRONBOX_BIN = path.join(REPO_ROOT, 'tronbox.dev');
 const FIXTURE_DIR = path.join(__dirname, 'fixture');
+const LOCAL_TMP_ROOT = path.join(__dirname, '.temp');
 
 const artifact = (buildDir, name) => path.join(buildDir, 'contracts', `${name}.json`);
 
 // Spawn the dev tronbox CLI. Default timeout exceeds the longest file-level
 // mocha timeout (300s) so a single CLI call never silently undercuts a test.
 function runCli(args, { cwd = FIXTURE_DIR, env = {}, input, timeout = 300_000 } = {}) {
-  return spawnSync(TRONBOX_BIN, args, {
+  return spawnSync(process.execPath, [TRONBOX_BIN, ...args], {
     cwd,
     encoding: 'utf-8',
     timeout,
@@ -28,7 +29,7 @@ function runCli(args, { cwd = FIXTURE_DIR, env = {}, input, timeout = 300_000 } 
 // before it can produce output.
 function runCliRepl(args, { cwd = FIXTURE_DIR, env = {}, steps = [], timeout = 180_000 } = {}) {
   return new Promise((resolve, reject) => {
-    const child = spawn(TRONBOX_BIN, args, {
+    const child = spawn(process.execPath, [TRONBOX_BIN, ...args], {
       cwd,
       env: { ...process.env, ...env, FORCE_COLOR: '0' }
     });
@@ -73,8 +74,23 @@ function makeTmp(prefix = 'tronbox-test-') {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
 }
 
-function removeTmp(dir) {
-  if (dir && dir.startsWith(os.tmpdir())) fs.removeSync(dir);
+function makeLocalTmp(prefix = 'tronbox-test-') {
+  fs.ensureDirSync(LOCAL_TMP_ROOT);
+  return fs.mkdtempSync(path.join(LOCAL_TMP_ROOT, prefix));
 }
 
-module.exports = { runCli, runCliRepl, makeTmp, removeTmp, artifact, REPO_ROOT, TRONBOX_BIN, FIXTURE_DIR };
+function removeTmp(dir) {
+  if (dir && (dir.startsWith(os.tmpdir()) || dir.startsWith(LOCAL_TMP_ROOT))) fs.removeSync(dir);
+}
+
+module.exports = {
+  runCli,
+  runCliRepl,
+  makeTmp,
+  makeLocalTmp,
+  removeTmp,
+  artifact,
+  REPO_ROOT,
+  TRONBOX_BIN,
+  FIXTURE_DIR
+};
