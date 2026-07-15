@@ -96,8 +96,6 @@ You are using version ${chalk.yellow(compilerVersion)}, which is not supported.`
   const soljsonPath = path.join(solcDir, `soljson_v${compilerVersion}.js`);
 
   if (!fs.existsSync(soljsonPath)) {
-    const cliPath = process.argv[1] || pkg.name;
-
     options.logger.log(`Fetching ${options.evm ? 'Ethereum' : 'Tron'} Solidity compiler version ${compilerVersion}...`);
     try {
       const args = ['--download-compiler', compilerVersion];
@@ -105,7 +103,7 @@ You are using version ${chalk.yellow(compilerVersion)}, which is not supported.`
         args.push('--evm');
       }
 
-      const result = execFileSync(process.execPath, [cliPath, ...args], {
+      const result = execFileSync(process.execPath, [process.argv[1], ...args], {
         env: { ...process.env, FORCE_COLOR: '1' },
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'pipe']
