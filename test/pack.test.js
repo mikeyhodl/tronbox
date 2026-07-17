@@ -44,41 +44,43 @@ describe('npm pack', function () {
 
   after(() => removeTmp(tmpPack));
 
-  it('ships every required directory and root file', () => {
-    const requiredRoots = ['build', 'sample-projects'];
-    const missingFromRequiredRoots = [];
+  describe('tarball contents', () => {
+    it('ships every required directory and root file', () => {
+      const requiredRoots = ['build', 'sample-projects'];
+      const missingFromRequiredRoots = [];
 
-    for (const root of requiredRoots) {
-      for (const f of walk(path.join(REPO_ROOT, root), root)) {
-        if (!packed.has(f)) missingFromRequiredRoots.push(f);
+      for (const root of requiredRoots) {
+        for (const f of walk(path.join(REPO_ROOT, root), root)) {
+          if (!packed.has(f)) missingFromRequiredRoots.push(f);
+        }
       }
-    }
 
-    expect(
-      missingFromRequiredRoots,
-      `npm pack is missing files under required directories:\n${missingFromRequiredRoots.join('\n')}`
-    ).to.be.empty;
+      expect(
+        missingFromRequiredRoots,
+        `npm pack is missing files under required directories:\n${missingFromRequiredRoots.join('\n')}`
+      ).to.be.empty;
 
-    const requiredRootFiles = ['console.sol', 'README.md', 'LICENSE'];
-    const missingRootFiles = requiredRootFiles.filter(f => !packed.has(f));
-    expect(missingRootFiles, `npm pack is missing required root files:\n${missingRootFiles.join('\n')}`).to.be.empty;
-  });
+      const requiredRootFiles = ['console.sol', 'README.md', 'LICENSE'];
+      const missingRootFiles = requiredRootFiles.filter(f => !packed.has(f));
+      expect(missingRootFiles, `npm pack is missing required root files:\n${missingRootFiles.join('\n')}`).to.be.empty;
+    });
 
-  it('keeps build/ aligned with src/', () => {
-    const srcFiles = new Set(walk(path.join(REPO_ROOT, 'src')));
-    const buildFiles = new Set(walk(path.join(REPO_ROOT, 'build')));
-    const allowedExtras = new Set(['tronbox.js']);
+    it('keeps build/ aligned with src/', () => {
+      const srcFiles = new Set(walk(path.join(REPO_ROOT, 'src')));
+      const buildFiles = new Set(walk(path.join(REPO_ROOT, 'build')));
+      const allowedExtras = new Set(['tronbox.js']);
 
-    const missing = [...srcFiles].filter(f => !buildFiles.has(f));
-    const extra = [...buildFiles].filter(f => !srcFiles.has(f) && !allowedExtras.has(f));
+      const missing = [...srcFiles].filter(f => !buildFiles.has(f));
+      const extra = [...buildFiles].filter(f => !srcFiles.has(f) && !allowedExtras.has(f));
 
-    const lines = [];
-    if (missing.length)
-      lines.push(`files present in src/ but missing in build/:\n${missing.map(f => `  - ${f}`).join('\n')}`);
-    if (extra.length)
-      lines.push(`unexpected files in build/ without a src/ counterpart:\n${extra.map(f => `  + ${f}`).join('\n')}`);
+      const lines = [];
+      if (missing.length)
+        lines.push(`files present in src/ but missing in build/:\n${missing.map(f => `  - ${f}`).join('\n')}`);
+      if (extra.length)
+        lines.push(`unexpected files in build/ without a src/ counterpart:\n${extra.map(f => `  + ${f}`).join('\n')}`);
 
-    expect(lines.length, `build/ and src/ are out of sync:\n${lines.join('\n')}`).to.equal(0);
+      expect(lines.length, `build/ and src/ are out of sync:\n${lines.join('\n')}`).to.equal(0);
+    });
   });
 
   describe('end-to-end checks with an installed package tarball', function () {
