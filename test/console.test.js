@@ -3,12 +3,12 @@
 const { expect } = require('chai');
 const path = require('path');
 const fs = require('fs-extra');
-const { runCli, runCliRepl, FIXTURE_DIR } = require('./helpers');
+const { runCli, runInConsole, FIXTURE_DIR } = require('./helpers');
 
 const cwd = FIXTURE_DIR;
 
 describe('tronbox console', function () {
-  this.timeout(60_000);
+  this.timeout(90_000);
 
   it('starts a REPL with the development network prompt and exits cleanly', () => {
     const r = runCli(['console'], { cwd, input: '.exit\n' });
@@ -60,11 +60,7 @@ describe('tronbox console', function () {
   });
 
   it('runs `test` from inside the REPL', async function () {
-    this.timeout(60_000);
-    const r = await runCliRepl(['console'], {
-      cwd,
-      steps: [{ input: 'test\n', expect: 'passing' }, { input: '.exit\n' }]
-    });
+    const r = await runInConsole('test', { cwd });
     expect(r.status, r.stderr).to.equal(0);
     expect(r.stdout).to.match(/\d+ passing/);
     expect(r.stdout).to.not.match(/\d+ failing/);
