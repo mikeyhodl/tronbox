@@ -36,6 +36,21 @@ describe('tronbox console', function () {
     expect(r.stdout + r.stderr).to.match(/nosuchidentifier is not defined/);
   });
 
+  it('evaluates an expression and prints its value', async function () {
+    const r = await runInConsole('6 * 7', { cwd });
+    expect(r.status, r.stderr).to.equal(0);
+    expect(r.stdout).to.match(/> 42\b/);
+  });
+
+  it('exposes contract abstractions and the tronWeb instance in the REPL context', async function () {
+    expect(runCli(['compile'], { cwd }).status).to.equal(0);
+
+    const r = await runInConsole(['Migrations.contractName', 'typeof tronWeb'], { cwd });
+    expect(r.status, r.stderr).to.equal(0);
+    expect(r.stdout).to.include("'Migrations'");
+    expect(r.stdout).to.include("'object'");
+  });
+
   it('built-in `help` prints the command list', () => {
     const r = runCli(['console'], { cwd, input: 'help\n.exit\n' });
     expect(r.status, r.stderr).to.equal(0);
@@ -64,6 +79,12 @@ describe('tronbox console', function () {
     expect(r.status, r.stderr).to.equal(0);
     expect(r.stdout).to.match(/\d+ passing/);
     expect(r.stdout).to.not.match(/\d+ failing/);
+  });
+
+  it('rejects `test --network` when it differs from the REPL', () => {
+    const r = runCli(['console'], { cwd, input: 'test --network shasta\n.exit\n' });
+    expect(r.status, r.stderr).to.equal(0);
+    expect(r.stdout + r.stderr).to.include('the current REPL is using --network=development');
   });
 
   it('rejects `test --evm` from a non-EVM REPL', () => {
