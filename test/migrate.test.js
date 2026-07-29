@@ -64,6 +64,18 @@ describe('tronbox migrate', function () {
     });
   });
 
+  describe('renumbered migrations', () => {
+    it('runs a pending migration after the last completed one is renumbered', () => {
+      fs.removeSync(buildDir);
+      expect(runCli(['migrate'], { cwd }).status).to.equal(0);
+
+      const r = runCli(['migrate'], { cwd, env: { MIGRATIONS_DIR: 'migrations_renumbered' } });
+      expect(r.status, r.stderr).to.equal(0);
+      expect(r.stdout).to.include('Running migration: 3_deploy_contracts.js');
+      expect(r.stdout).to.not.include('Network up to date.');
+    });
+  });
+
   describe('without Migrations.sol', () => {
     const env = {
       CONTRACTS_DIR: 'contracts_no_migrations',
