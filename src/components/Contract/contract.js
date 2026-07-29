@@ -268,11 +268,11 @@ Contract._static_methods = {
                 return f;
               };
 
-              if (!self.hasOwnProperty(item.name)) {
+              if (!Object.prototype.hasOwnProperty.call(self, item.name)) {
                 self[item.name] = createWrapper(item.name);
               }
 
-              if (!self.hasOwnProperty(functionSelector)) {
+              if (!Object.prototype.hasOwnProperty.call(self, functionSelector)) {
                 self[functionSelector] = createWrapper(functionSelector);
               }
 

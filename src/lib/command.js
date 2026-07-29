@@ -39,7 +39,7 @@ Command.prototype.getCommand = function (cmds) {
 
   const input = argv._[0];
 
-  if (!this.commands[input]) return null;
+  if (!Object.prototype.hasOwnProperty.call(this.commands, input)) return null;
 
   return {
     name: input,
