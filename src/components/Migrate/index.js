@@ -260,14 +260,14 @@ const Migrate = {
         if (err) return callback(err);
 
         while (migrations.length > 0) {
-          if (migrations[0].number >= number) {
+          if (migrations[0].number > number) {
             break;
           }
 
           migrations.shift();
         }
 
-        callback(null, migrations.length > 1 || (migrations.length && number === 0));
+        callback(null, migrations.length > 0);
       });
     });
   }
