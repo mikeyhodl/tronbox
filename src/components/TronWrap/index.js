@@ -285,6 +285,8 @@ function init(options, extraOptions = {}) {
         bytecode: txOptions.data,
         feeLimit: txOptions.feeLimit || this.networkConfig.feeLimit,
         callValue: txOptions.callValue || this.networkConfig.callValue,
+        tokenId: txOptions.tokenId || this.networkConfig.tokenId,
+        tokenValue: txOptions.tokenValue || this.networkConfig.tokenValue,
         userFeePercentage,
         originEnergyLimit,
         abi: txOptions.abi,
