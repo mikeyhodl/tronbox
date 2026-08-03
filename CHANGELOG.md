@@ -1,3 +1,28 @@
+**4.10.0**
+
+### Features
+
+- Added support for Tron Solidity compilers 0.8.27, 0.8.28 and 0.8.29; new projects default to 0.8.29
+- `console` now persists REPL history across sessions in `.console_history` under the project root
+
+### Bug Fixes
+
+- Fixed `migrate` skipping pending migrations when the last completed migration file has been renumbered or removed
+- Fixed array-form `deployer.deploy` deploying contracts concurrently instead of sequentially
+- Fixed transaction option handling when deploying and calling contracts
+- Fixed `test` dropping user-configured mocha `reporterOptions`
+- Fixed `console` ignoring artifact-loading errors; it now loads only `.json` artifacts and exits on a corrupt one
+- Fixed `flatten` duplicating sources included through different import paths
+- Fixed `flatten` dropping trailing content when stripping import lines
+- Fixed `unbox` masking download and extraction errors
+- Fixed calling contract functions named `name` or `length` on deployed contract instances
+- Fixed unknown commands that match built-in JavaScript property names not being rejected
+
+### Dependencies
+
+- Upgraded `tronweb` to 6.4.0
+- Upgraded `axios` to 1.19.0
+
 **4.9.0**
 
 ### Bug Fixes
