@@ -67,6 +67,13 @@ function validateNodeUrl(nodeUrl, configKey = 'node URL', logger = {}) {
   }
 }
 
+function resolveDeployAssetOption(txOptions, networkConfig, key) {
+  if (Object.prototype.hasOwnProperty.call(txOptions, key)) {
+    return txOptions[key];
+  }
+  return networkConfig[key];
+}
+
 function filterNetworkConfig(options) {
   const userFeePercentage =
     typeof options.userFeePercentage === 'number'
@@ -284,9 +291,9 @@ function init(options, extraOptions = {}) {
       {
         bytecode: txOptions.data,
         feeLimit: txOptions.feeLimit || this.networkConfig.feeLimit,
-        callValue: txOptions.callValue || this.networkConfig.callValue,
-        tokenId: txOptions.tokenId || this.networkConfig.tokenId,
-        tokenValue: txOptions.tokenValue || this.networkConfig.tokenValue,
+        callValue: resolveDeployAssetOption(txOptions, this.networkConfig, 'callValue'),
+        tokenId: resolveDeployAssetOption(txOptions, this.networkConfig, 'tokenId'),
+        tokenValue: resolveDeployAssetOption(txOptions, this.networkConfig, 'tokenValue'),
         userFeePercentage,
         originEnergyLimit,
         abi: txOptions.abi,
