@@ -11,7 +11,6 @@ TronBox is a development framework and testing environment for smart contracts o
 With TronBox, you get:
 
 - Built-in smart contract compilation, linking, deployment, and binary management.
-- An external script runner that executes scripts within a TronBox environment.
 - An interactive console for direct contract communication.
 - Automated contract testing for rapid development.
 - A scriptable, extensible deployment & migrations framework.

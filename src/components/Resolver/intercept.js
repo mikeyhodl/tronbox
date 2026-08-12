@@ -1,6 +1,6 @@
 function ResolverIntercept(resolver) {
   this.resolver = resolver;
-  this.cache = {};
+  this.cache = Object.create(null);
 }
 
 ResolverIntercept.prototype.require = function (import_path) {
@@ -18,9 +18,6 @@ ResolverIntercept.prototype.require = function (import_path) {
   const resolved = this.resolver.require(import_path);
 
   this.cache[import_path] = resolved;
-
-  // The chain may be slow to accept transactions; never time out the wait.
-  resolved.synchronization_timeout = 0;
 
   return resolved;
 };

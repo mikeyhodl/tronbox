@@ -151,3 +151,6 @@ vite.config.ts.timestamp-*
 
 # TronBox build directory
 build
+
+# TronBox console history
+.console_history

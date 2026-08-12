@@ -42,12 +42,14 @@ const versions = fetchVersions();
 describe('full Tron compiler matrix', function () {
   this.timeout(180_000);
 
-  it('list.json newest version equals TronSolc.maxVersion', () => {
-    expect(versions[versions.length - 1]).to.equal(maxVersion);
-  });
+  describe('version list', () => {
+    it('list.json newest version equals TronSolc.maxVersion', () => {
+      expect(versions[versions.length - 1]).to.equal(maxVersion);
+    });
 
-  it('matrix is non-empty', () => {
-    expect(versions.length).to.be.greaterThan(0);
+    it('matrix is non-empty', () => {
+      expect(versions.length).to.be.greaterThan(0);
+    });
   });
 
   describe('every supported version', () => {

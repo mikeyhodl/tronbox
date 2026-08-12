@@ -1,4 +1,5 @@
 const repl = require('repl');
+const path = require('path');
 const { expect } = require('./utils');
 const async = require('async');
 const EventEmitter = require('events');
@@ -42,6 +43,8 @@ ReplManager.prototype.start = function (options) {
       prompt: currentContext.prompt,
       eval: this.interpret.bind(this)
     });
+
+    this.repl.setupHistory(path.join(this.options.working_directory, '.console_history'), function () {});
 
     this.repl.on('exit', function () {
       // If we exit for some reason, call done functions for good measure

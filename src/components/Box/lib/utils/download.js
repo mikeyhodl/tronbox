@@ -1,6 +1,7 @@
 const axios = require('axios');
 const os = require('os');
 const path = require('path');
+const { pipeline } = require('stream/promises');
 const fs = require('fs-extra');
 const yauzl = require('yauzl');
 
@@ -17,9 +18,7 @@ function parseParams(params) {
 }
 
 function streamToFile(stream, file) {
-  return new Promise((resolve, reject) => {
-    stream.pipe(fs.createWriteStream(file)).on('close', resolve).on('error', reject);
-  });
+  return pipeline(stream, fs.createWriteStream(file));
 }
 
 function extractZip(zipFile, outputDir) {
@@ -70,13 +69,10 @@ function extractZip(zipFile, outputDir) {
           fs.ensureDir(path.dirname(file), err => {
             if (err) return fail(err);
 
-            const writeStream = fs.createWriteStream(file);
-            readStream.pipe(writeStream);
-            writeStream.on('close', () => {
+            pipeline(readStream, fs.createWriteStream(file)).then(() => {
               pending--;
               maybeFinish();
-            });
-            writeStream.on('error', fail);
+            }, fail);
           });
         });
         zipfile.readEntry();
@@ -109,6 +105,8 @@ module.exports = async function downloadRepo(params, dir) {
     const extractedFolder = await extractZip(zipFile, tmpDir);
     await fs.move(path.join(tmpDir, extractedFolder), targetDir, { overwrite: true });
   } finally {
-    await fs.remove(tmpDir);
+    try {
+      fs.removeSync(tmpDir);
+    } catch (e) {}
   }
 };

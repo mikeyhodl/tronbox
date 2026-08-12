@@ -12,8 +12,9 @@ const artifact = (buildDir, name) => path.join(buildDir, 'contracts', `${name}.j
 
 // Spawn the dev tronbox CLI. Default timeout exceeds the longest file-level
 // mocha timeout (300s) so a single CLI call never silently undercuts a test.
-function runCli(args, { cwd = FIXTURE_DIR, env = {}, input, timeout = 300_000 } = {}) {
-  return spawnSync(process.execPath, [TRONBOX_BIN, ...args], {
+function runCli(args, { cwd = FIXTURE_DIR, env = {}, input, timeout = 300_000, isTTY = false } = {}) {
+  const entry = isTTY ? ['-e', 'process.stdout.isTTY = true; require(process.argv[1]);'] : [];
+  return spawnSync(process.execPath, [...entry, TRONBOX_BIN, ...args], {
     cwd,
     encoding: 'utf-8',
     timeout,
@@ -23,50 +24,40 @@ function runCli(args, { cwd = FIXTURE_DIR, env = {}, input, timeout = 300_000 } 
   });
 }
 
-// Drive the REPL line-by-line, only sending the next line once `expect` appears
-// in stdout. Required for any input that triggers a spawned subcommand —
-// spawnSync closes stdin on EOF, which makes the REPL exit and kill the child
-// before it can produce output.
-function runCliRepl(args, { cwd = FIXTURE_DIR, env = {}, steps = [], timeout = 180_000 } = {}) {
+// Run commands one at a time as the console prompt becomes ready, then exit.
+// Pass `bin` and optional `binArgs` to drive an installed tronbox instead of
+// the dev CLI.
+function runInConsole(commands, { cwd = FIXTURE_DIR, env = {}, timeout = 60_000, bin, binArgs = [] } = {}) {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [TRONBOX_BIN, ...args], {
-      cwd,
-      env: { ...process.env, ...env, FORCE_COLOR: '0' }
-    });
+    const spawnEnv = { ...process.env, ...env, FORCE_COLOR: '0' };
+    const child = bin
+      ? spawn(bin, [...binArgs, 'console'], { cwd, env: spawnEnv, shell: true })
+      : spawn(process.execPath, [TRONBOX_BIN, 'console'], { cwd, env: spawnEnv });
+    const pending = Array.isArray(commands) ? commands.slice() : [commands];
     let stdout = '';
     let stderr = '';
-    const pending = steps.slice();
-    let waitingFor = null;
-
-    const trySendNext = () => {
-      while (pending.length && (!waitingFor || stdout.includes(waitingFor))) {
-        const step = pending.shift();
-        waitingFor = step.expect || null;
-        child.stdin.write(step.input);
-      }
-      if (!pending.length && !waitingFor) child.stdin.end();
-    };
+    let handledPrompts = 0;
 
     child.stdout.on('data', d => {
       stdout += d.toString();
-      if (waitingFor && stdout.includes(waitingFor)) {
-        waitingFor = null;
-        trySendNext();
-      }
+      const promptCount = (stdout.match(/tronbox\([^)]+\)> /g) || []).length;
+      if (promptCount === handledPrompts) return;
+
+      handledPrompts = promptCount;
+      if (pending.length) child.stdin.write(`${pending.shift()}\n`);
+      else child.stdin.end('.exit\n');
     });
     child.stderr.on('data', d => (stderr += d.toString()));
 
     const timer = setTimeout(() => {
       child.kill('SIGKILL');
-      reject(new Error(`runCliRepl timeout after ${timeout}ms\nstdout:\n${stdout}\nstderr:\n${stderr}`));
+      reject(new Error(`runInConsole timeout after ${timeout}ms\nstdout:\n${stdout}\nstderr:\n${stderr}`));
     }, timeout);
 
     child.on('close', (status, signal) => {
       clearTimeout(timer);
       resolve({ status, signal, stdout, stderr });
     });
-
-    trySendNext();
   });
 }
 
@@ -85,7 +76,7 @@ function removeTmp(dir) {
 
 module.exports = {
   runCli,
-  runCliRepl,
+  runInConsole,
   makeTmp,
   makeLocalTmp,
   removeTmp,

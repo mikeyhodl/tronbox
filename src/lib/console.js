@@ -67,10 +67,7 @@ Console.prototype.start = function (callback) {
   this.options.repl = this.repl;
 
   this.provision(function (err, abstractions) {
-    if (err) {
-      self.options.logger.log('Unexpected error: Cannot provision contracts while instantiating the console.');
-      self.options.logger.log(err.stack || err.message || err);
-    }
+    if (err) return callback(err);
 
     self.repl.start({
       prompt: 'tronbox(' + self.options.network + ')> ',
@@ -99,7 +96,7 @@ Console.prototype.provision = function (callback) {
     }
 
     const promises = [];
-    files = files || [];
+    files = (files || []).filter(file => path.extname(file) === '.json');
 
     files.forEach(function (file) {
       promises.push(
