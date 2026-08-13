@@ -1,7 +1,7 @@
 {
   "name": "tronbox",
   "namespace": "tronprotocol",
-  "version": "4.9.0",
+  "version": "4.10.0",
   "description": "TronBox - Simple development framework for Tron",
   "keywords": [
     "TronBox",
@@ -24,7 +24,7 @@
     "@solidity-parser/parser": "0.20.2",
     "ajv": "6.14.0",
     "async": "2.6.4",
-    "axios": "1.16.1",
+    "axios": "1.19.0",
     "chai": "4.1.2",
     "chalk": "2.4.2",
     "debug": "3.2.7",
@@ -39,14 +39,13 @@
     "mocha": "11.7.4",
     "node-dir": "0.1.17",
     "source-map-support": "0.5.21",
-    "tronweb": "6.3.0",
+    "tronweb": "6.4.0",
     "yargs": "15.4.1",
     "yauzl": "3.4.0"
   },
   "devDependencies": {
     "@babel/cli": "7.28.3",
     "@babel/core": "7.28.3",
-    "@babel/plugin-transform-runtime": "7.28.3",
     "@babel/preset-env": "7.28.3",
     "eslint": "9.39.1",
     "eslint-plugin-n": "17.23.1",
@@ -59,7 +58,6 @@
       "serialize-javascript": "7.0.5"
     },
     "tronweb": {
-      "axios": "1.16.1",
       "ws": "8.21.0"
     }
   },

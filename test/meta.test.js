@@ -56,10 +56,12 @@ describe('tronbox CLI', function () {
   });
 
   describe('unknown command', () => {
-    it('exits non-zero with an "invalid command" error', () => {
-      const r = runCli(['nosuchcommand'], { cwd });
-      expect(r.status).to.not.equal(0);
-      expect(r.stderr).to.include('`tronbox nosuchcommand` is an invalid command');
+    ['nosuchcommand', 'toString', '__proto__'].forEach(name => {
+      it(`${name} exits non-zero as an invalid command`, () => {
+        const r = runCli([name], { cwd });
+        expect(r.status).to.not.equal(0);
+        expect(r.stderr).to.include(`\`tronbox ${name}\` is an invalid command`);
+      });
     });
   });
 });

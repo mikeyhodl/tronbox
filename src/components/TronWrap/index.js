@@ -67,6 +67,13 @@ function validateNodeUrl(nodeUrl, configKey = 'node URL', logger = {}) {
   }
 }
 
+function resolveDeployAssetOption(txOptions, networkConfig, key) {
+  if (Object.prototype.hasOwnProperty.call(txOptions, key)) {
+    return txOptions[key];
+  }
+  return networkConfig[key];
+}
+
 function filterNetworkConfig(options) {
   const userFeePercentage =
     typeof options.userFeePercentage === 'number'
@@ -284,7 +291,9 @@ function init(options, extraOptions = {}) {
       {
         bytecode: txOptions.data,
         feeLimit: txOptions.feeLimit || this.networkConfig.feeLimit,
-        callValue: txOptions.callValue || this.networkConfig.callValue,
+        callValue: resolveDeployAssetOption(txOptions, this.networkConfig, 'callValue'),
+        tokenId: resolveDeployAssetOption(txOptions, this.networkConfig, 'tokenId'),
+        tokenValue: resolveDeployAssetOption(txOptions, this.networkConfig, 'tokenValue'),
         userFeePercentage,
         originEnergyLimit,
         abi: txOptions.abi,
@@ -557,7 +566,7 @@ function init(options, extraOptions = {}) {
   tronWrap._evmDeployContract = async function (txOptions, callback) {
     const opt = {
       from: txOptions.from || tronWrap._ethers_accounts[0],
-      gas: txOptions.gas || txOptions.gasLimit || this.networkConfig.gas,
+      gasLimit: txOptions.gas || txOptions.gasLimit || this.networkConfig.gas,
       gasPrice: txOptions.gasPrice || this.networkConfig.gasPrice,
       maxPriorityFeePerGas: txOptions.maxPriorityFeePerGas || this.networkConfig.maxPriorityFeePerGas,
       maxFeePerGas: txOptions.maxFeePerGas || this.networkConfig.maxFeePerGas,
@@ -618,7 +627,7 @@ function init(options, extraOptions = {}) {
     const { methodArgs } = txOptions;
     const opt = {
       from: methodArgs.from || tronWrap._ethers_accounts[0],
-      gas: methodArgs.gas || methodArgs.gasLimit || this.networkConfig.gas,
+      gasLimit: methodArgs.gas || methodArgs.gasLimit || this.networkConfig.gas,
       gasPrice: methodArgs.gasPrice || this.networkConfig.gasPrice,
       maxPriorityFeePerGas: methodArgs.maxPriorityFeePerGas || this.networkConfig.maxPriorityFeePerGas,
       maxFeePerGas: methodArgs.maxFeePerGas || this.networkConfig.maxFeePerGas,

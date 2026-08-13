@@ -64,6 +64,18 @@ describe('tronbox migrate', function () {
     });
   });
 
+  describe('renumbered migrations', () => {
+    it('runs a pending migration after the last completed one is renumbered', () => {
+      fs.removeSync(buildDir);
+      expect(runCli(['migrate'], { cwd }).status).to.equal(0);
+
+      const r = runCli(['migrate'], { cwd, env: { MIGRATIONS_DIR: 'migrations_renumbered' } });
+      expect(r.status, r.stderr).to.equal(0);
+      expect(r.stdout).to.include('Running migration: 3_deploy_contracts.js');
+      expect(r.stdout).to.not.include('Network up to date.');
+    });
+  });
+
   describe('without Migrations.sol', () => {
     const env = {
       CONTRACTS_DIR: 'contracts_no_migrations',
@@ -147,6 +159,25 @@ describe('tronbox migrate', function () {
       const r = runCli(['migrate', '--quiet', '--reset'], { cwd });
       expect(r.status, r.stderr).to.equal(0);
       expect(r.stdout).to.equal('');
+    });
+  });
+
+  describe('batch deploy', () => {
+    const env = {
+      CONTRACTS_DIR: 'contracts_advanced',
+      MIGRATIONS_DIR: 'migrations_advanced',
+      BUILD_DIR: 'build_advanced',
+      SOLC_VERSION: '0.8.20'
+    };
+    const altBuildDir = path.join(cwd, env.BUILD_DIR);
+
+    it('deploys each entry in an array to a distinct address', () => {
+      fs.removeSync(altBuildDir);
+      const r = runCli(['migrate'], { cwd, env });
+      expect(r.status, r.stderr).to.equal(0);
+      const addresses = [...r.stdout.matchAll(/Empty:\s+\(base58\) (\S+)/g)].map(m => m[1]);
+      expect(addresses).to.have.lengthOf(2);
+      expect(addresses[0]).to.not.equal(addresses[1]);
     });
   });
 

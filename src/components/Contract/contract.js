@@ -267,12 +267,22 @@ Contract._static_methods = {
                 f.call = f;
                 return f;
               };
-              if (!self.hasOwnProperty(item.name)) {
+
+              if (!Object.prototype.hasOwnProperty.call(self, item.name)) {
                 self[item.name] = createWrapper(item.name);
               }
 
-              if (!self.hasOwnProperty(functionSelector)) {
+              if (!Object.prototype.hasOwnProperty.call(self, functionSelector)) {
                 self[functionSelector] = createWrapper(functionSelector);
+              }
+
+              if (functionSelector === 'name()' || functionSelector === 'length()') {
+                Object.defineProperty(self, item.name, {
+                  value: createWrapper(functionSelector),
+                  writable: true,
+                  enumerable: true,
+                  configurable: true
+                });
               }
             }
           }
